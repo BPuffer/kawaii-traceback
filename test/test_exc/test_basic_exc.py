@@ -1,74 +1,86 @@
-import json
-import unittest
-import sys
-import kawaiitb; kawaiitb.load()
+from test.utils import KTBTestCase
 
-__CONFIG__ = {
-    "translate_keys": {
-        "__test__": {
-            "extend": "neko_zh"
-            # "stack.summary": "stack.summary",  # Traceback (most recent call last):\n
-            # "frame.location.with_column": "{{'frame.location.with_column': {{'file':r'{file}', 'lineno':'{lineno}', 'name':'{name}', 'colno':'{colno}' }}}}\n",  #   File "test.py", line 1, in <module>\n
-            # "frame.location.linetext": "{{'frame.location.linetext':{{'line':r'{line}' }} }}\n",  #     raise Exception("test")\n
-        }
-    },
-    "default_lang": "__test__"
-}
+class TestExceptionFormatting(KTBTestCase, preview=True):
 
+    def test_StopIteration(self):
+        """kawaiitb.handlers.defaults.StopIterationHandler"""
+        from kawaiitb.handlers.defaults import StopIterationHandler
 
-class TestExceptionFormatting(unittest.TestCase):
+        def gen():
+            for i in range(10):
+                yield i
 
-    @classmethod
-    def setUpClass(cls):
-        cls.traceback = kawaiitb.traceback
-        kawaiitb.load_config(__CONFIG__)
+        obj = type("_Foo", (), {"g": gen()})()
 
-    @classmethod
-    def tearDownClass(cls):
-        kawaiitb.unload()
-
-    def test_normal_exc(self):
-        """普通的异常"""
         try:
-            raise Exception("test")
-        except Exception as e:
-            exc_format = "".join(self.traceback.format_exception(e))
-            print(exc_format)
+            while True:
+                # 非常复杂的ast解析定位测试
+                # 要解析的是'instance.g'这个表达式
+                _ = str((f"{next(obj. \
+                                 g):0<10}".join([]), "str")[0]).strip()
+        except StopIteration as e:
+            self.try_preview(e)
+            ktb, handler, msgs, tb = self.pack_exc(StopIterationHandler, e)
+            assert "'obj.g'" in tb
 
-    def test_nested_exception(self):
-        """异常追溯"""
         try:
-            def f1():
-                a = 1 / 0
+            while True:
+                # 这次是obj.g.__next__()
+                _ = str((f"{obj. \
+                                 g. \
+                    __next__():0<10}".join([]), "str")[0]).strip()
+        except StopIteration as e:
+            self.try_preview(e)
+            ktb, handler, msgs, tb = self.pack_exc(StopIterationHandler, e)
+            assert "'obj.g'" in tb
 
-            def f2():
-                f1()
+    def test_StopAsyncIteration(self):
+        """kawaiitb.handlers.defaults.StopAsyncIterationHandler"""
+        from kawaiitb.handlers.defaults import StopAsyncIterationHandler
+        import asyncio
 
-            def f3():
-                f2()
+        async def async_gen():
+            for i in range(10):
+                yield i
 
-            f3()
-        except Exception as e:
-            exc_format = "".join(self.traceback.format_exception(e))
-            print(exc_format)
-
-    def test_exception_cause(self):
-        """cause链"""
-        try:
-            raise Exception("test")
-        except Exception as e:
+        async def run_test():
+            abj = type("_Aoo", (), {"g": async_gen()})()
             try:
-                raise Exception("test2") from e
-            except Exception as e2:
-                exc_format = "".join(self.traceback.format_exception(e2))
-                print(exc_format)
+                while True:
+                    # 很复杂的异步ast解析定位测试
+                    # 要解析的是'obj.g'这个表达式
+                    _ = str((f"{await anext(abj. \
+                              g):0<10}".join([]), "str")[0]).strip()
+            except StopAsyncIteration as e:
+                self.try_preview(e)
+                ktb, handler, msgs, tb = self.pack_exc(StopAsyncIterationHandler, e)
+                assert "'abj.g'" in tb
 
-    def test_external_module_error(self):
-        """测试工作区其他模块异常"""
+            abj = type("_Aoo", (), {"g": async_gen()})()
+            try:
+                while True:
+                    # 这次是abj.g.__anext__()
+                    _ = str((f"{await abj. \
+                              g. \
+                    __anext__():0<10}".join([]), "str")[0]).strip()
+            except StopAsyncIteration as e:
+                self.try_preview(e)
+                ktb, handler, msgs, tb = self.pack_exc(StopAsyncIterationHandler, e)
+                assert "'abj.g'" in tb
+
+        # 使用辅助函数运行异步测试
+        asyncio.run(run_test())
+
+    def test_overflow(self):
+        """OverflowError异常"""
+        from kawaiitb.handlers.defaults import OverflowErrorHandler
         try:
-            from dir_.at import raise_error
-            raise_error()
-        except Exception as e:
-            exc_format = "".join(self.traceback.format_exception(e))
-            print(exc_format)
+            import math
+            a = math.exp(1000)
+        except OverflowError as e:
+            self.try_preview(e)
+            ktb, handler, msgs, tb = self.pack_exc(OverflowErrorHandler, e)
+            # assert "math.exp" in tb
+
+
 

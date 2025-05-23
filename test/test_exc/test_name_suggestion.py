@@ -50,7 +50,7 @@ class TestSyntaxError(unittest.TestCase):
     def test_circular_import(self):
         """测试循环导入"""
         try:
-            import another
+            from test import another
         except Exception as e:
             exc_format = "".join(self.traceback.format_exception(e))
             print(exc_format)

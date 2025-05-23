@@ -100,8 +100,8 @@ DEFAULT_CONFIG = {
             "config.file.include_cwd": False,
             "config.module": "模块级语句",
             "config.string": "注入的语句",
-            "frame.location.with_column": '  文件 "{file}:{lineno}:{colno}" 的 {name}\n',
-            "frame.location.without_column": '  文件 "{file}:{lineno}" 的 {name}\n',
+            "frame.location.with_column": '  文件 {file}:{lineno}:{colno} 的 {name}\n',
+            "frame.location.without_column": '  文件 {file}:{lineno} 的 {name}\n',
             "frame.location.without_name": '  文件 "{file}:{lineno}"\n',
             "stack.cause": "\n该异常引发了另一个异常:\n\n",
             "stack.context": "\n处理上面的异常时，发生了如下异常:\n\n",
@@ -110,12 +110,12 @@ DEFAULT_CONFIG = {
         },
         "neko_zh(zh_hans)": {  # 萌化中文配置示例
             "extend": "zh_hans",
-            "stack.summary": "pypy被玩坏了！\n\n这肯定不是py的问题！\n绝对不是！\n",
+            "stack.summary": "pypy被玩坏了！\n这肯定不是py的问题！\n绝对不是！\n",
             "config.file.parse_module_filename": True,
+            "config.file.parsed_filename": "[{namespace} 模块] {filename}",
             "config.prompt1": "owo!> ",
             "config.prompt2": "=w=~| ",
             "config.anchor.suffix": " ↖在这里喵~",
-            "config.file.parsed_filename": "[{namespace} 模块] {filename}"
         },
         "qb(neko_zh)": {  # 二次扩展示例
             "extend": "neko_zh",

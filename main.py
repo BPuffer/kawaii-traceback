@@ -135,7 +135,8 @@ if __name__ == '__main__1':
     测试异常的context
     """
     try:
-        import another
+        from test import another
+
         another.hello()
     except Exception as e:
         traceback.print_exception(e, file=out_to_here)
@@ -163,7 +164,7 @@ if __name__ == '__main__1':
     测试在工作区其他模块中产生的异常
     """
     try:
-        from dir_.at import raise_error
+        from test.dir_.at import raise_error
         raise_error()
     except Exception as e:
         traceback.print_exception(e, file=out_to_here)
@@ -173,7 +174,7 @@ if __name__ == '__main__1':
     测试在site-package中的模块里产生的异常
     """
     try:
-        from dir_.at import scipy_error
+        from test.dir_.at import scipy_error
 
         scipy_error()
     except Exception as e:
@@ -226,7 +227,4 @@ if __name__ == '__main__1':
         raise CustomException("test")
     except Exception as e:
         traceback.print_exception(e, file=out_to_here)
-
-
-
 

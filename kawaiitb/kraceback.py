@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Optional, Type, TYPE_CHECKING, Generator
 
-from kawaiitb.config import rc
+from kawaiitb.runtimeconfig import rc
 from kawaiitb.utils import sys_getframe, extract_caret_anchors_from_line_segment, safe_string
 from kawaiitb.utils.fromtraceback import (
     sentinel, parse_value_tb, walk_tb_with_full_positions,
@@ -849,7 +849,7 @@ class KTBException:
                 hi_priority = handler.priority
                 hi_priority_handler = handler
 
-        assert hi_priority_handler is not None, "No handler found for this exception. Why kwihandler.ErrorSuggestHandler is not register?"
+        assert hi_priority_handler is not None, "No handler found for this exception. Why kwihandler.ErrorSuggestHandler not here?"
         yield from hi_priority_handler.handle(self)
 
 

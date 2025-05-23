@@ -1,4 +1,5 @@
-import another
+from test import another
+
 another.hello()
 
 def hello():

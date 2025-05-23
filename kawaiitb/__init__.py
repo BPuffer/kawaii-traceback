@@ -4,18 +4,21 @@ import warnings
 from functools import wraps
 from traceback import format_exception as orig_format_exception, TracebackException
 import kawaiitb.kraceback as traceback
-from kawaiitb.config import rc, load_config
+from kawaiitb.runtimeconfig import rc, load_config
 from kawaiitb.kraceback import KTBException
 from kawaiitb.utils.fromtraceback import parse_value_tb, sentinel as _sentinel
 
-from kawaiitb.kwihandler import ErrorSuggestHandler, SyntaxErrorHandler
+from kawaiitb.kwihandler import ErrorSuggestHandler
+
+from kawaiitb.handlers import *
 
 __all__ = [
     "traceback",
-    "hijack",
+    "override",
     "load",
     "rc",
     "ErrorSuggestHandler",
+    "KTBException",
 ]
 
 __excepthook__ = sys.excepthook
@@ -32,7 +35,7 @@ def unload():
         sys.ps2 = __ps2__
 
 
-def hijack(excepthook=True, console_prompt=None):
+def override(excepthook=True, console_prompt=None):
     if excepthook:
         @wraps(orig_format_exception)  # 签名对齐 traceback.format_exception
         def wrapped(exc, /, value=_sentinel, tb=_sentinel, limit=None, chain=True):
@@ -103,4 +106,4 @@ def load(file=None, lang=None, excepthook=True, console_prompt=True):
     elif file is not None:
         load_config(file)
 
-    hijack(excepthook=excepthook, console_prompt=console_prompt)
+    override(excepthook=excepthook, console_prompt=console_prompt)

@@ -124,7 +124,7 @@ class RuntimeConfig:
     def register_handler(self, Handler: Type["ErrorSuggestHandler"]):
         """注册处理器的翻译键."""
         transkeys = Handler.translation_keys()
-        if transkeys is not None:
+        if transkeys is not None and len(transkeys) > 0:
             for lang, data in transkeys.items():
                 if lang not in _config["translate_keys"]:
                     _config["translate_keys"][lang] = {}

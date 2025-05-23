@@ -1,15 +1,11 @@
 """
-这里定义错误处理器的基类，动态扩展的示例于此展示。
+这里定义错误处理器的基类，动态扩展的示例将在这里展示。
 """
+from typing import Generator, Any, Type
 
-import sys
-from typing import Generator, Any
-
-from kawaiitb import rc
+from kawaiitb.runtimeconfig import rc
 from kawaiitb.kraceback import KTBException
 from kawaiitb.utils import format_final_exc_line
-from kawaiitb.utils.fromtraceback import (
-    compute_suggestion_error, )
 
 
 @KTBException.register
@@ -26,14 +22,19 @@ class ErrorSuggestHandler:
     - 原生级处理器使用1.0优先级。即本文件中的所有附加处理器。
     - 希望官方处理器先认领，认领失败时自己处理时，使用属于(0, 1)的优先级。
     - 希望自己的处理器先认领，认领失败时官方处理器处理时，使用属于(1, +infny)的优先级。
-        - 独立的异常类型级别的，使用优先级2。
-        - 独立的异常描述级别的，使用优先级3。
-        - 针对特定异常参数的建议，使用优先级4。
+        - 独立的异常类型，使用优先级2
+          (如ModuleNotFoundErrorHandler专注于ModuleNotFoundError)。
+        - 独立的异常描述级别的，使用优先级3
+          (如NoneTypeErrorHandler处理参数为None的TypeError)。
+        - 针对特定异常参数/信息的建议/翻译，使用优先级4
+          (如PyyamlNotFoundErrorHandler处理pyyaml的NameError)。
     """
 
-    priority: float = 0.0  # 优先级，选取多少看处理器的细化程度
+    __priority__: float = 0.0  # 基处理器的优先级为0.0
+    # 所有有效的处理器都应该高于此优先级以覆盖处理。
+    # 所有不生效(如仅翻译)的处理器都应该低于此优先级。建议使用标准的: -1.0.
 
-    def __init__(self, exc_type, exc_value, exc_traceback, *, limit=None,
+    def __init__(self, exc_type: Type[BaseException], exc_value: BaseException, exc_traceback, *, limit=None,
                  lookup_lines=True, capture_locals=False, compact=False,
                  max_group_width=15, max_group_depth=10, _seen=None):
         ...
@@ -45,7 +46,20 @@ class ErrorSuggestHandler:
         # 另外，如果你是直接继承的ErrorSuggestHandler，其实可以省略super调用，
         # 因为init实际上并没有做什么……
 
-        # 如果也不需要后面的设置，可以用**kwargs来收取所有参数，然后按需提取和忽略。
+        # 如果也不需要后面的设置，可以用**kwargs来收取所有参数，然后按需提取和忽略。、
+
+    def __init_subclass__(cls, priority):
+        """
+        初始化子类时，自动注册翻译键。
+        可以通过priority参数来设置处理器的优先级。
+>>> class MyHandler(ErrorSuggestHandler, priority=2.0):
+>>>     ...
+        """
+        cls.__priority__ = priority
+
+    @property
+    def priority(self) -> float:
+        return self.__priority__
 
     def can_handle(self, ktb_exc: KTBException) -> bool:
         """返回本处理器是否能处理异常。"""
@@ -56,7 +70,7 @@ class ErrorSuggestHandler:
         # 但前者只是基本的找不到包提醒，后者则是提供了更详细的解决方案，提示用户应该导入的是yaml。
         # 所以优先级PyyamlNotFoundErrorHandler(4.0) > ModuleNotFoundErrorHandler(2.0)。
 
-        return True  # 基处理器要捕获所有异常
+        return True  # 当然这里是基处理器，要处理所有异常
 
     @classmethod
     def translation_keys(cls) -> dict[str, dict[str, Any]]:
@@ -87,93 +101,38 @@ class ErrorSuggestHandler:
         yield format_final_exc_line(stype, ktb_exc.final_exc_str)
 
 
-@KTBException.register
-class SyntaxErrorHandler(ErrorSuggestHandler):
-    priority: float = 1.0
-    def __init__(self, exc_type, exc_value, exc_traceback, *, limit=None,
-                 lookup_lines=True, capture_locals=False, compact=False,
-                 max_group_width=15, max_group_depth=10, _seen=None):
-        super().__init__(exc_type, exc_value, exc_traceback)
-        if exc_type and issubclass(exc_type, SyntaxError):
-            self.filename = exc_value.filename
-            lno = exc_value.lineno
-            self.lineno = str(lno) if lno is not None else None
-            end_lno = exc_value.end_lineno
-            self.end_lineno = str(end_lno) if end_lno is not None else None
-            self.text = exc_value.text
-            self.offset = exc_value.offset
-            self.end_offset = exc_value.end_offset
-            self.msg = exc_value.msg
+# 以下是示例代码
+class ImportErrorHandler(ErrorSuggestHandler, priority=2.0):
+    ...
 
-    @classmethod
-    def translate_keys(cls):
-        return {
-            "default": {},
-        }
+#@KTBException.register 使用装饰器可以注册处理器。本示例中暂不使用。
+class PyYamlImportErrorHandler(ImportErrorHandler, priority=4.0):
+    """
+    在pyyaml导入失败时提供更详细的解决方案。
 
-    def can_handle(self, ktb_exc) -> bool:
-        return issubclass(ktb_exc.exc_type, SyntaxError)
+    一个Handler将在KTBException初始化时被初始化
+    初始化时，__init__会被传入异常的所有原始参数
+    (不需要的参数可以用**kwargs原样丢回super)
+    之后，KTBException会调用can_handle来判断是否能处理异常
+    如果最终以最高优先级被选中，则会调用handle来处理异常
+    """
+    def __init__(self, exc_type, exc_value, exc_traceback, **kwargs):
+        super().__init__(exc_type, exc_value, exc_traceback, **kwargs)
 
-    def handle(self, ktb_exc) -> Generator[str, None, None]:
-        r"""
-        (-) Traceback (most recent call last):
-        (-)   File "C:\Users\BPuffer\Desktop\kawaii-traceback\main.py", line 139:8, in <module>
-        (-)     exec("what can i say?")
-        (1)   File "<string>", line 1
-        (2)     what can i say?
-        (3)          ^^^
-        (4) SyntaxError: invalid syntax (<string>, line 1)
-        """
-        if self.lineno is not None:
-            # part (1)
-            yield rc.translate("frame.location.without_name",
-                               file=self.filename or "<string>",  # repr转义
-                               lineno=self.lineno,)
-
-        text = self.text
-        if text is not None:
-            rtext = text.rstrip('\n')
-            ltext = rtext.lstrip(' \n\f')
-            spaces = len(rtext) - len(ltext)
-            # part (2)
-            yield rc.translate("frame.location.linetext",
-                               line=ltext)
-
-            if self.offset is not None:
-                offset = self.offset
-                end_offset = self.end_offset if self.end_offset not in {None, 0} else offset
-                if offset == end_offset or end_offset == -1:
-                    end_offset = offset + 1
-
-                colno = offset - 1 - spaces
-                end_colno = end_offset - 1 - spaces
-                if colno >= 0:
-                    caretspace = ((c if c.isspace() else ' ') for c in ltext[:colno])
-                    yield '    {}{}'.format("".join(caretspace), ('^' * (end_colno - colno) + "\n"))
-
-        msg = self.msg or "<no detail available>"
-        # stype = ktb_exc.exc_type.__qualname__
-        # yield "{}: {}{}\n".format(stype, msg, filename_suffix)
-        yield from super().handle(ktb_exc)
-
-@KTBException.register
-class PyYamlImportErrorHandler(ErrorSuggestHandler):
-    priority: float = 4.0
-
-    def __init__(self, exc_type, exc_value, exc_traceback, *, limit=None,
-                 lookup_lines=True, capture_locals=False, compact=False,
-                 max_group_width=15, max_group_depth=10, _seen=None):
-        super().__init__(exc_type, exc_value, exc_traceback)
-        
         # 检查是否是pyyaml相关的导入错误
-        self._can_handle = (issubclass(exc_type, ImportError) and 
-                          getattr(exc_value, "name", "") == "pyyaml")
-        
-    # 注册扩展翻译键到运行时配置
+        # 这里从__init__接受的参数的一部分也可以在后面从KTBException中获取,
+        # 但其中的一些参数可能会在处理时被修改，所以最好还是从这里获取。
+        # 如果需要修改后的参数，可以在handle中获取。
+
+        self._can_handle = (issubclass(exc_type, ImportError) and
+                            getattr(exc_value, "name", "") == "pyyaml")
+
+    # 注册扩展翻译键到运行时配置，以供后续使用
     @classmethod
     def translation_keys(cls):
         return {
             "default": {
+                # 没必要分行yield，直接写多行文本就好了~！
                 "exthandler.pyyaml.hint": "Attention: You may have installed the 'pyyaml' package, but you should import 'yaml' instead of 'pyyaml'.\n"
                                           "- Install pyyaml using pip: pip install pyyaml\n"
                                           "- Import yaml in your code: import yaml",
@@ -185,75 +144,31 @@ class PyYamlImportErrorHandler(ErrorSuggestHandler):
             }
         }
 
-    
     def can_handle(self, ktb_exc) -> bool:
+        # 因为__init__和can_handle都是每个handle的必经之路
+        # 所以在那边存储在这处理和直接在那处理保存结果效率都差不多
         return self._can_handle
 
     def handle(self, ktb_exc) -> Generator[str, None, None]:
+        """
+        1. 继承原则
+        在本测试用例PyYamlImportErrorHandler中,
+        如果直接继承 ErrorSuggestHandler 会导致
+        super处理时直接把"ImportError: No module named 'pyyaml'"
+        这条原生信息直接丢给用户. 而 ImportErrorHandler一定会为此准备。
+        即使你不打算使用 ImportErrorHandler 提供的信息
+        我仍然建议你继承 ImportErrorHandler, 这可以使得逻辑更清晰
+        也可以避免一些潜在问题.
+        2. 翻译原则
+        你可以使用 rc.translate 来获取翻译, 也可以直接硬编码.
+        但我强烈建议你使用翻译, 并至少准备default的英语语种.
+        这样你的代码可以令全世界程序员都能看懂.
+        3. yield原则
+        如上, __init__和can_handle都是每个handle的必经之路,
+        但只有handle是处理器确定要处理异常时才会被调用.
+        只有在handle中, 你才能处理一些真正耗时的部分,
+        比如复杂的ast解析等.
+        大量的处理器在初始化时一个个做这件事是很不划算的.
+        """
         yield from super().handle(ktb_exc)
         yield rc.translate("exthandler.pyyaml.hint") + "\n"
-
-@KTBException.register
-class ImportErrorHandler(ErrorSuggestHandler):
-    priority: float = 1.0
-    def __init__(self, exc_type, exc_value, exc_traceback, *, limit=None,
-                 lookup_lines=True, capture_locals=False, compact=False,
-                 max_group_width=15, max_group_depth=10, _seen=None):
-        super().__init__(exc_type, exc_value, exc_traceback)
-
-        self._can_handle = issubclass(exc_type, ImportError) and getattr(exc_value, "name_from", None) is not None
-
-        if self._can_handle:
-            self.wrong_name = getattr(exc_value, "name_from")
-            self.suggestion = compute_suggestion_error(exc_value, exc_traceback, self.wrong_name)
-
-
-    def can_handle(self, ktb_exc) -> bool:
-        return self._can_handle
-
-    def handle(self, ktb_exc) -> Generator[str, None, None]:
-        yield from super().handle(ktb_exc)
-        if self.suggestion:
-            yield f"你是想写'{self.suggestion}'吗?"
-
-
-@KTBException.register
-class NameAttributeErrorHandler(ErrorSuggestHandler):
-    priority: float = 1.0
-
-    def __init__(self, exc_type, exc_value, exc_traceback, *, limit=None,
-                 lookup_lines=True, capture_locals=False, compact=False,
-                 max_group_width=15, max_group_depth=10, _seen=None):
-        super().__init__(exc_type, exc_value, exc_traceback)
-
-        self._can_handle = (issubclass(exc_type, (NameError, AttributeError)) and
-                            getattr(exc_value, "name", None) is not None)
-
-        if self._can_handle:
-            self.wrong_name = getattr(exc_value, "name")
-            self.suggestion = compute_suggestion_error(exc_value, exc_traceback, self.wrong_name)
-            self.is_stdlib = self.wrong_name in sys.stdlib_module_names
-
-            self.is_3rd_party = False
-            import importlib.metadata
-            try:
-                importlib.metadata.distribution(self.wrong_name)
-                self.is_3rd_party = True
-            except importlib.metadata.PackageNotFoundError:
-                pass
-
-            self.is_lib = self.is_stdlib or self.is_3rd_party
-
-    def can_handle(self, ktb_exc) -> bool:
-        return self._can_handle
-
-    def handle(self, ktb_exc) -> Generator[str, None, None]:
-        yield from super().handle(ktb_exc)
-        if self.suggestion:
-            yield f"你是想写'{self.suggestion}'吗?"
-
-        if issubclass(ktb_exc.exc_type, NameError) and self.is_stdlib:
-            if self.suggestion:
-                yield f"或者没导入: '{self.wrong_name}'"
-            else:
-                yield f"猜你没导入: '{self.wrong_name}'"

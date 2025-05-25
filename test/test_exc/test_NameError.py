@@ -1,6 +1,6 @@
 import pytest
 
-from test.utils.utils import KTBTestBase
+from ..utils.utils import KTBTestBase
 
 
 class TestNameError(KTBTestBase, console_output=True):

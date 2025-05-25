@@ -1,5 +1,5 @@
 import kawaiitb
-from test.utils.utils import KTBTestBase
+from .utils.utils import KTBTestBase
 
 
 class TestAnchor(KTBTestBase, console_output=False):

@@ -1,16 +1,26 @@
-import os
+"""
+Kawaii Traceback - Cute Python traceback beautifier
+
+A delightful tool for transforming standard Python tracebacks into adorable and 
+user-friendly error messages with multilingual support.
+"""
+
+__version__ = "0.1.0"
+__author__ = "Your Name <mc-puffer@qq.com>"
+__license__ = "MIT"
+__copyright__ = "Copyright (c) 2025 BPuffer"
+__description__ = "A kawaii Python traceback beautifier with multilingual support"
+
 import sys
 import warnings
 from functools import wraps
 from traceback import format_exception as orig_format_exception, TracebackException
+
 import kawaiitb.kraceback as traceback
-from kawaiitb.runtimeconfig import rc, load_config
 from kawaiitb.kraceback import KTBException
-from kawaiitb.utils.fromtraceback import parse_value_tb, sentinel as _sentinel
-
 from kawaiitb.kwihandler import ErrorSuggestHandler
-
-from kawaiitb.handlers import *
+from kawaiitb.runtimeconfig import rc, load_config
+from kawaiitb.utils.fromtraceback import parse_value_tb, sentinel as _sentinel
 
 __all__ = [
     "traceback",
@@ -47,7 +57,7 @@ def override(excepthook=True, console_prompt=None):
                 return orig_format_exception(exc, value=_sentinel, tb=_sentinel, limit=None, chain=True) + [
                     "\n\nKawaiiTB occurred another exception while formatting this exception:\n"
                 ] + list(TracebackException.from_exception(e).format()) + [
-                    "Please report this issue to the developer of KawaiiTB."
+                    "Please report this to the KawaiiTB developers.\n"
                 ]
 
         # 劫持异常处理
@@ -59,10 +69,10 @@ def override(excepthook=True, console_prompt=None):
         sys.ps2 = rc.translate("config.prompt2")
 
     if console_prompt == True and not __in_console__:  # 必须显式声明为True
-        warnings.warn("[KawaiiTB] Console prompt hijacking is not supported in this environment.")
+        warnings.warn("[KawaiiTB] Console prompt is not supported in this environment.")
 
 
-def load(file=None, lang=None, excepthook=True, console_prompt=True):
+def load(file=None, lang=None, excepthook=True, console_prompt=False):
     """
     加载配置并劫持hook.
 

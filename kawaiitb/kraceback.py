@@ -594,7 +594,13 @@ class StackSummary(list[FrameSummary]):
         last_line = None
         last_name = None
         recursive_cutoff = rc.translate("config.stack.recursive_cutoff")
-        assert type(recursive_cutoff) is int, f"config.stack.recursive_cutoff must be an integer, but found ({type(recursive_cutoff)}){recursive_cutoff}"
+        if isinstance(recursive_cutoff, str) and recursive_cutoff.isdigit():
+            recursive_cutoff = int(recursive_cutoff)
+        if not isinstance(recursive_cutoff, int):
+            import warnings
+            warnings.warn(f"config.stack.recursive_cutoff must be an integer, but found ({type(recursive_cutoff)}){recursive_cutoff}, use default value {recursive_cutoff}")
+            recursive_cutoff = 3
+
         count = 0
         for frame_summary in self:
             formatted_frame = self.format_frame_summary(frame_summary)
@@ -829,9 +835,9 @@ class KTBException:
         """
         if self.exc_type is None:
             if self.final_exc_str is None or not self.final_exc_str:
-                yield  rc.translate("exception.exception_only.nono")
+                yield rc.exc_line("UnknownError")
             else:
-                yield  rc.translate("exception.exception_only.notype", value=self.final_exc_str)
+                yield rc.exc_line("UnknownError", self.final_exc_str)
             return
 
         stype: str = self.exc_type.__qualname__

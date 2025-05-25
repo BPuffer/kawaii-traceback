@@ -1,12 +1,19 @@
 """
 这里定义错误处理器的基类，动态扩展的示例将在这里展示。
 """
-from typing import Generator, Any, Type
+import linecache
+from types import TracebackType
+from typing import Generator, Any, Type, final
 
+import astroid
+
+from kawaiitb.kraceback import KTBException, FrameSummary
 from kawaiitb.runtimeconfig import rc
-from kawaiitb.kraceback import KTBException
-from kawaiitb.utils import format_final_exc_line
+from kawaiitb.utils.ast_parse import astroid_walk_inside
 
+__all__ = [
+    "ErrorSuggestHandler"
+]
 
 @KTBException.register
 class ErrorSuggestHandler:
@@ -34,7 +41,7 @@ class ErrorSuggestHandler:
     # 所有有效的处理器都应该高于此优先级以覆盖处理。
     # 所有不生效(如仅翻译)的处理器都应该低于此优先级。建议使用标准的: -1.0.
 
-    def __init__(self, exc_type: Type[BaseException], exc_value: BaseException, exc_traceback, *, limit=None,
+    def __init__(self, exc_type: Type[BaseException], exc_value: BaseException, exc_traceback: TracebackType, *, limit=None,
                  lookup_lines=True, capture_locals=False, compact=False,
                  max_group_width=15, max_group_depth=10, _seen=None):
         ...
@@ -84,21 +91,34 @@ class ErrorSuggestHandler:
         """
         ...
 
-    def handle(self, ktb_exc: KTBException) -> Generator[str, None, None]:
+    def handle(self, etype: KTBException) -> Generator[str, None, None]:
         """
         处理异常，返回一个生成器，生成器会逐行产生处理后的错误信息。
         并不一定非要每行一定断一下，这只是为了模块的灵活性，如果你需要输出确定不变的多行信息，直接写就是了。
-
-        当然，我永远不推荐直接硬编码。最好先使用translation_keys()来定义翻译键，然后使用rc.translate()来获取翻译。
-        毕竟你不知道你的用户会使用什么语言。
         """
-        stype: str = ktb_exc.exc_type.__qualname__
-        smod: str = ktb_exc.exc_type.__module__
+        stype = etype.exc_type.__qualname__
+        smod = etype.exc_type.__module__
         if smod not in ("__main__", "builtins"):
             if not isinstance(smod, str):
                 smod = "<unknown>"
             stype = smod + '.' + stype
-        yield format_final_exc_line(stype, ktb_exc.final_exc_str)
+        yield rc.exc_line(stype, etype.final_exc_str)
+
+    @staticmethod
+    @final
+    def parse_ast_from_exc(exc_frame: FrameSummary, parse_line=False):
+        """
+        从一个帧中解析并产生相关的AST节点
+        """
+        start_line = exc_frame.lineno
+        end_line = exc_frame.end_lineno
+        start_col = 0 if parse_line else exc_frame.colno
+        end_col = 99999999 if parse_line else exc_frame.end_colno
+        tree = astroid.parse("".join(linecache.getlines(exc_frame.filename)))
+
+        yield from astroid_walk_inside(tree, start_line, end_line, start_col, end_col)
+
+
 
 
 # 以下是示例代码

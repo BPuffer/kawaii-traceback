@@ -23,15 +23,15 @@ pip install kawaii-traceback
 ## 🚀 快速开始
 
 ```python
-import kawaiitb; kawaiitb.load()  # 加载默认配置
+import kawaiitb; kawaiitb.load('neko_zh')  # 加载猫娘配置
 
 # 现在所有异常都会以可爱的方式显示
-1 / 0
+2 / 0
 ```
 
 ## 🌍 多语言支持
 
-“语言”实际上是一种语言的扩展，你可以通过自定义新的语言来自定义提示的风格
+“语言”实际上是广义语言的扩展，你可以通过自定义新的语言来自定义提示的风格
 
 ```python
 # 加载中文提示
@@ -50,11 +50,11 @@ kawaiitb.load('neko_zh')
   "translate_keys": {
     "my_neko(zh_hans)": {
       "extend": "zh_hans",
-      "exceptions.ZeroDivisionError": "{divisor}变成零了喵！不能除以零喵不能除以零喵！",
-      "exceptions.NameError": "你确定{name}被定义了喵？",
+      "native.ZeroDivisionError.msg": "{divisor}变成零了喵！不能除以零喵不能除以零喵！",
+      "native.NameError.msg": "你确定{name}存在喵？"
     }
   },
-  "default_lang": "my_neko(zh_hans)",
+  "default_lang": "my_neko(zh_hans)"
 }
 ```
 然后使用 `kawaiitb.load('mytb.json')` 加载配置。

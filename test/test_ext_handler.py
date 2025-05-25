@@ -25,7 +25,7 @@ class TestExceptionFormatting(unittest.TestCase):
     def test_pyyaml_exc(self):
         """普通的异常"""
         try:
-            import pyyaml  # 故意将yaml写成pyyaml
+            import pyyaml  # noqa
         except Exception as e:
             exc_format = "".join(self.traceback.format_exception(e))
             print(exc_format)

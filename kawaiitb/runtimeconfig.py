@@ -17,7 +17,7 @@ __all__ = [
 
 import warnings
 from collections import defaultdict, deque
-from typing import TextIO, Type, TYPE_CHECKING
+from typing import TextIO, Type, TYPE_CHECKING, Optional
 
 from kawaiitb._default_config import DEFAULT_CONFIG, EXTENDED
 if TYPE_CHECKING:
@@ -46,24 +46,6 @@ def load_config(config: dict | TextIO = None):
         else:
             raise TypeError("[KawaiiTB] config must be a dict or a file-like object")
         update_config(config_data)
-
-    # 整理继承关系
-    for lang, data in list(_config["translate_keys"].items()):
-        if "(" in lang:
-            if "extend" not in data:
-                warnings.warn(f"[KawaiiTB] Language {lang} is not extending any language!")
-                continue
-            raw_name, after_brace = lang.split("(", 1)
-            inbrace = after_brace.rstrip(")")
-            if (
-                    inbrace != data["extend"] and  # "neko_zh(zh_hans)": {"extend": "zh_hans"}
-                    inbrace != data["extend"].split("(", 1)  # "neko_zh(zh_hans)": {"extend": "zh_hans(default)"}
-            ):
-                warnings.warn(f"[KawaiiTB] Language {lang} is not extending {data['extend']} but {inbrace}!")
-                warnings.warn(f"{data['extend']=}, {type(data['extend'])=}, {inbrace=}, {type(inbrace)=}")
-            _config["translate_keys"][raw_name] = {
-                "extend": lang
-            }
 
     # 验证继承合法性
     for lang, data in _config["translate_keys"].items():
@@ -154,7 +136,7 @@ class RuntimeConfig:
             if not self._check_lang(lang):  # 检查所选的语言是否存在, 否则使用默认语言
                 warnings.warn(f"[KawaiiTB] Language {lang} is not exist, using default language instead.")
                 warnings.warn('langs:' + str(self.langs))
-                lang = _config["default_lang"]
+                lang = "default"
                 continue
 
             if self._check_key(lang, key) \
@@ -171,11 +153,11 @@ class RuntimeConfig:
                 lang = self._get_key(lang, "extend")
                 continue
 
-            # 其他情况，走一下默认配置
+            # 其他情况，走默认配置
             lang = "default"
 
         warnings.warn(f"[KawaiiTB] Exceeded maximum extend depth for key: {key}")
-        return "<Exceeded maximum extend depth for key: {key}>"
+        return f"<[KawaiiTB] Unreachable translate key: {key}>"
 
     def anchors(self, indent: str, left_start: int, left_end: int, right_start: int, right_end: int, crlf: bool):
         primary = self.translate("config.anchor.primary")
@@ -190,5 +172,10 @@ class RuntimeConfig:
 
         return indent + left_segment + middle_segment + right_segment + suffix
 
+    def exc_line(self, exc_type_str: str, exc_value_str: Optional[str]=None):
+        if exc_value_str is None:
+            return self.translate("exception.exc_line_noval", etype=exc_type_str)
+        else:
+            return self.translate("exception.exc_line", etype=exc_type_str, value=exc_value_str)
 
 rc: RuntimeConfig = RuntimeConfig()

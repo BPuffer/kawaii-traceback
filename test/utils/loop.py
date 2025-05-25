@@ -1,7 +1,7 @@
 # circular import
-import another2
+from . import pool
 
-another2.hello()
+pool.hello()
 
 def hello():
     print(f"Hello, world! (module: {__name__})")

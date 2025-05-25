@@ -6,9 +6,9 @@ kawaii-traceback 多语言配置系统说明
 语言配置是一个json文件或python字典，包含以下结构:
 {
     "translate_keys": 翻译键值对
-        "%your_lang(extended)%": 你的翻译名
+        "(your_lang)": 你的翻译名
             "extend": str;你要继承的翻译名  <== 如果没有，默认继承default
-            "%some.keywords%": str;各种翻译键  <== 可翻译键值对可以在下面的default中找到
+            "(some.keywords)": str;各种翻译键  <== 可翻译键值对可以在下面的default中找到
     "default_lang": str;默认语言  <== 如果希望你的翻译加载后能够立刻生效，在这个键中指定你的翻译名
 }
 注意：
@@ -87,10 +87,8 @@ DEFAULT_CONFIG = {
 
             # 各个异常格式化
             "exception.message": "{etype}: {value}\n",
-            "exception.exception_only.nono": "None type exception\n",
-            "exception.exception_only.notype": "None: {value}\n",
-            "exception.exception_only.novalue": "{etype}\n",
-            "exception.exception_only": "{etype}: {value}\n",
+            "exception.exc_line_noval": "{etype}\n",
+            "exception.exc_line": "{etype}: {value}\n",
             "exception.qualname": "{qualname}",
             "exception.module_qualname": "{module}.{qualname}",
             "exception.note": "{note}\n",
@@ -108,35 +106,39 @@ DEFAULT_CONFIG = {
             "stack.summary": "异常回溯 (到最近一次调用):\n",
             "config.stack.line_repeat_more": ' (*在那之后, 这一行重复了 {count} 次)\n',
         },
-        "neko_zh(zh_hans)": {  # 萌化中文配置示例
+        "neko_zh": {  # 萌化中文配置示例
             "extend": "zh_hans",
-            "stack.summary": "pypy被玩坏了！\n这肯定不是py的问题！\n绝对不是！\n",
+            "stack.summary": "pypy被玩坏了！这肯定不是py的问题！绝对不是！\n",
             "config.file.parse_module_filename": True,
             "config.file.parsed_filename": "[{namespace} 模块] {filename}",
             "config.prompt1": "owo!> ",
             "config.prompt2": "=w=~| ",
             "config.anchor.suffix": " ↖在这里喵~",
+
+            "exception.message": "[{etype}] {value}\n",
+            "exception.exc_line_noval": "[{etype}]!\n",
+            "exception.exc_line": "[{etype}] {value}\n",
         },
-        "qb(neko_zh)": {  # 二次扩展示例
+        "qb": {  # 二次扩展示例
             "extend": "neko_zh",
             "config.prompt1": "✧⋆˚｡~˚~｡> ",
             "config.prompt2": "✧ :*✧･ﾟ:| ",
         }
     },
-    "default_lang": "qb(neko_zh)",
+    "default_lang": "qb",
 }
 
 if __name__ == "__main__":
     # 示例自定义配置
     new_config = {
         "translate_keys": {
-            "neko_zh(zh_hans)": {
+            "neko_zh": {
                 "extend": "zh_hans",
                 "config.file.parse_module_filename": True,
                 "frame.location.with_column": EXTENDED,
                 "config.anchor.suffix": " ↖在这里喵~",
             }
         },
-        "default_lang": "neko_zh(zh_hans)"
+        "default_lang": "neko_zh"
     }
     # 此处以字典格式为例。JSON配置可以使用`kawaiitb.load(open('your_config.json'))`

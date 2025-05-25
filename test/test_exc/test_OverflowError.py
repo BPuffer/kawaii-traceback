@@ -1,4 +1,4 @@
-from test.utils.utils import KTBTestBase
+from ..utils.utils import KTBTestBase
 import pytest
 import math
 from kawaiitb.handlers.defaults import OverflowErrorHandler

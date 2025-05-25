@@ -1,5 +1,5 @@
 import pytest
-from test.utils.utils import KTBTestBase
+from ..utils.utils import KTBTestBase
 from kawaiitb.handlers.defaults import StopIterationHandler
 
 

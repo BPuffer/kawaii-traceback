@@ -1,5 +1,5 @@
 import pytest
-from test.utils.utils import KTBTestBase
+from .utils.utils import KTBTestBase
 import kawaiitb
 
 
@@ -33,7 +33,7 @@ class TestExceptionFormatting(KTBTestBase, console_output=True):
     def test_in_package_error(self):
         """测试项目中模块的异常"""
         try:
-            from test.utils.utils import raise_error
+            from utils.utils import raise_error
             raise_error()
         except Exception as e:
             import os

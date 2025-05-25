@@ -12,19 +12,16 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/bpuffer/kawaii-traceback",
-    packages=find_packages(include=['kawaiitb', 'kawaiitb.*']),
-    package_data={
-        'kawaiitb': ['*.json']
-    },
+    packages=find_packages(include=['kawaiitb', 'kawaiitb.*']),  # 明确包含你的包
     install_requires=[
-        'astroid>=3.3.10',
-        'pytest>=7.0.0',
-        'pytest-asyncio>=0.23.0',
+        'astroid>=3.3.10',  # 仅保留运行时必需依赖
     ],
-    tests_require=[
-        'pytest>=7.0.0',
-        'pytest-asyncio>=0.23.0',
-    ],
+    extras_require={
+        "test": [  # 定义测试依赖，供 `pip install -e .[test]` 使用
+            "pytest>=7.0.0",
+            "pytest-asyncio>=0.23.0",
+        ],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

@@ -713,8 +713,8 @@ class KTBException:
         try:
             self.__notes__ = getattr(exc_value, '__notes__', None)
         except Exception as e:
-            self.__notes__ = [
-                f'Ignored error getting __notes__: {safe_string(e, '__notes__', repr)}']
+            note_summary = safe_string(e, "__notes__", repr)
+            self.__notes__ = [f'Ignored error getting __notes__: {note_summary}']
 
         self.final_exc_str = self.exc_str
 

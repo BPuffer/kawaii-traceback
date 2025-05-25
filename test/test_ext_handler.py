@@ -28,4 +28,4 @@ class TestExceptionFormatting(unittest.TestCase):
             import pyyaml  # noqa
         except Exception as e:
             exc_format = "".join(self.traceback.format_exception(e))
-            print(exc_format)
+            # print(exc_format)

@@ -2,7 +2,7 @@ import pytest
 
 from ..utils.utils import KTBTestBase
 
-class TestSyntaxError(KTBTestBase, console_output=True):
+class TestSyntaxError(KTBTestBase, console_output=False):
 
     @pytest.mark.skip(reason="SyntaxError TODO")
     def test_syntax_error_invalid_lex(self):

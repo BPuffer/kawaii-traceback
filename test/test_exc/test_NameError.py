@@ -3,7 +3,7 @@ import pytest
 from ..utils.utils import KTBTestBase
 
 
-class TestNameError(KTBTestBase, console_output=True):
+class TestNameError(KTBTestBase, console_output=False):
     @pytest.mark.skip(reason="NameError TODO")
     def test_spelling_error_print(self):
         """测试拼写错误的print"""

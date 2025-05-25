@@ -3,7 +3,7 @@ from .utils.utils import KTBTestBase
 import kawaiitb
 
 
-class TestExceptionFormatting(KTBTestBase, console_output=True):
+class TestExceptionFormatting(KTBTestBase, console_output=False):
     def test_recursive_exception(self):
         """测试递归异常深度溢出"""
         try:

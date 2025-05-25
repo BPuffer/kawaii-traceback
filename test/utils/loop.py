@@ -4,4 +4,4 @@ from . import pool
 pool.hello()
 
 def hello():
-    print(f"Hello, world! (module: {__name__})")
+    return f"Hello, world! (module: {__name__})"

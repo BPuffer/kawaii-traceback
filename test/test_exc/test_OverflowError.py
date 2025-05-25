@@ -4,7 +4,7 @@ import math
 from kawaiitb.handlers.defaults import OverflowErrorHandler
 
 
-class TestOverflowError(KTBTestBase, console_output=True):
+class TestOverflowError(KTBTestBase, console_output=False):
     def test_math_exp(self):
         """测试math.exp()引发的OverflowError"""
         with pytest.raises(OverflowError) as excinfo:

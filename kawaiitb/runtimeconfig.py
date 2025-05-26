@@ -147,7 +147,7 @@ class RuntimeConfig:
 
             if lang == "default":  # 如果连默认配置都不存在这个键，返回未知配置提示
                 warnings.warn(f"[KawaiiTB] Unknown translate key: {key}")
-                return "<Unknown config: {key}>"
+                return f"<Unknown config: {key}>"
 
             if self._check_key(lang, "extend"):  # 如果继承自其他语言……
                 lang = self._get_key(lang, "extend")

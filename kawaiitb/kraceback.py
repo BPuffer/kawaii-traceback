@@ -318,45 +318,55 @@ class FrameSummary:
         return self.load_line()
 
 
+import os
+import sysconfig
+from pathlib import Path
+
 def parse_module_filename(filename: str) -> str:
-    """处理模块文件名，返回格式化后的显示字符串
+    """处理模块文件名，返回格式化后的显示字符串（跨平台优化版）"""
+    # 优先处理标准库路径
+    stdlib_path = Path(sysconfig.get_path("stdlib")).resolve()
+    try:
+        abs_path = Path(filename).resolve().relative_to(stdlib_path)
+        parts = abs_path.parts
+        if parts:
+            return rc.translate(
+                "config.file.parsed_filename",
+                namespace=parts[0],
+                filename=os.sep.join(parts)
+            )
+    except ValueError:
+        pass
 
-    参数:
-        filename: 原始文件路径
-
-    返回:
-        格式化后的文件路径字符串
-    """
     # 工作区文件处理
-    if filename.startswith(ENV.cwd):
+    cwd = Path(ENV.cwd).resolve()
+    try:
+        rel_path = Path(filename).resolve().relative_to(cwd)
         if not rc.translate("config.file.include_cwd"):
-            return filename[len(ENV.cwd):].lstrip('/\\')
+            return str(rel_path)
         return filename
+    except ValueError:
+        pass
 
-    # 非工作区文件处理
-    sep = os.path.sep
-    markers = [
-        f"{sep}site-packages{sep}",
-        f"{sep}dist-packages{sep}",
-        f"{sep}lib{sep}",
-        f"{sep}Lib{sep}",
-        f"{sep}python{sep}",
+    # 第三方包路径检测
+    normalized = os.path.normpath(filename).replace("\\", "/").lower()
+    patterns = [
+        ("site-packages", 1),  # 匹配层级
+        ("dist-packages", 1),
+        ("lib/python", 2),     # 跳过版本号目录
+        ("lib64/python", 2),
+        ("/python", 2),       # Windows 路径如 C:/Python312/Lib/
     ]
 
-    # 查找包根目录
-    for marker in markers:
-        idx = filename.find(marker)
-        if idx != -1:
-            pkg_root = idx + len(marker)
-            remaining_path = filename[pkg_root:]
-            first_sep = remaining_path.find(sep)
-            if first_sep != -1:
-                package_name = remaining_path[:first_sep]
-                relative_path = remaining_path
+    for pattern, skip in patterns:
+        index = normalized.find(f"/{pattern}/")
+        if index != -1:
+            parts = normalized[index+1:].split("/")[skip+1:]
+            if parts:
                 return rc.translate(
                     "config.file.parsed_filename",
-                    namespace=package_name,
-                    filename=relative_path
+                    namespace=parts[0],
+                    filename=os.sep.join(parts)
                 )
 
     return filename

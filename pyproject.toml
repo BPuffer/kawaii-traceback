@@ -12,7 +12,6 @@ keywords = ["traceback", "debug", "error-handling"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -36,5 +35,5 @@ test = [
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["kawaiitb", "kawaiitb.*"]
+[tool.setuptools.packages.find]
+include = ["kawaiitb", "kawaiitb.*"]

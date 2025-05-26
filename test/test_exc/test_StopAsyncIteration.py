@@ -1,6 +1,7 @@
 import pytest
-from ..utils.utils import KTBTestBase
+
 from kawaiitb.handlers.defaults import StopAsyncIterationHandler
+from test.utils.utils import KTBTestBase
 
 
 async def async_gen():
@@ -24,7 +25,8 @@ class TestStopAsyncIteration(KTBTestBase, console_output=False):
         with pytest.raises(StopAsyncIteration) as excinfo:
             while True:
                 await anext(confuser1)
-                _ = str((f"{await anext(confuser2)}{await anext(obj.g):0<{await anext(confuser3)}}".join([]), "str")[0]).strip()
+                _ = str((f"{await anext(confuser2)}{await anext(obj.g):0<{await anext(confuser3)}}".join([]), "str")[
+                            0]).strip()
         e = excinfo.value
         ktb, handler, msgs, tbmsg = self.pack_exc(StopAsyncIterationHandler, e)
         self.try_print_exc(e)
@@ -41,7 +43,9 @@ class TestStopAsyncIteration(KTBTestBase, console_output=False):
         with pytest.raises(StopAsyncIteration) as excinfo:
             while True:
                 await anext(confuser1)
-                _ = str((f"{await anext(confuser2)}{await obj.h.__anext__():0<{await anext(confuser3)}}".join([]), "str")[0]).strip()
+                _ = str(
+                    (f"{await anext(confuser2)}{await obj.h.__anext__():0<{await anext(confuser3)}}".join([]), "str")[
+                        0]).strip()
         e = excinfo.value
         ktb, handler, msgs, tbmsg = self.pack_exc(StopAsyncIterationHandler, e)
         self.try_print_exc(e)

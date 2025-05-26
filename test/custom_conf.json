@@ -1,0 +1,11 @@
+{
+  "translate_keys": {
+    "test_conf": {
+      "stack.summary": "Test summary qwertyuiopasdfghjklzxcvbnm\n"
+    },
+    "another_lang": {
+      "stack.summary": "Test summary 1234567890\n"
+    }
+  },
+  "default_lang": "test_conf"
+}

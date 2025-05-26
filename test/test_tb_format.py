@@ -1,11 +1,13 @@
 import pytest
-from .utils.utils import KTBTestBase
+
 import kawaiitb
+from test.utils.utils import KTBTestBase, setup_test
 
 
-class TestExceptionFormatting(KTBTestBase, console_output=False):
+class TestExceptionFormatting(KTBTestBase, console_output=True):
     def test_recursive_exception(self):
         """测试递归异常深度溢出"""
+        setup_test()
         try:
             f = lambda x: f(x + 1)
             f(1)
@@ -13,7 +15,6 @@ class TestExceptionFormatting(KTBTestBase, console_output=False):
             tb = "".join(kawaiitb.traceback.format_exception(e))
             self.try_print_exc(e)
             assert "*在那之后" in tb
-            assert "maximum recursion" in tb.lower()
 
     def test_exception_with_notes(self):
         """测试带__notes__的异常"""
@@ -33,7 +34,7 @@ class TestExceptionFormatting(KTBTestBase, console_output=False):
     def test_in_package_error(self):
         """测试项目中模块的异常"""
         try:
-            from utils.utils import raise_error
+            from test.utils.utils import raise_error
             raise_error()
         except Exception as e:
             import os

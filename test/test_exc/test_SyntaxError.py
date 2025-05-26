@@ -1,6 +1,7 @@
 import pytest
 
-from ..utils.utils import KTBTestBase
+from test.utils.utils import KTBTestBase
+
 
 class TestSyntaxError(KTBTestBase, console_output=False):
 

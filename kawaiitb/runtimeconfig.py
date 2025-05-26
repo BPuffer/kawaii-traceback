@@ -20,6 +20,8 @@ from collections import defaultdict, deque
 from typing import TextIO, Type, TYPE_CHECKING, Optional
 
 from kawaiitb._default_config import DEFAULT_CONFIG, EXTENDED
+from kawaiitb.utils import readables
+
 if TYPE_CHECKING:
     from kawaiitb.kwihandler import ErrorSuggestHandler
 
@@ -37,10 +39,9 @@ def load_config(config: dict | TextIO = None):
     """
     global _config
     if config is not None:
-        if isinstance(config, TextIO):
+        if isinstance(config, readables):
             import json
             config_data = json.load(config)
-            config.close()  # 立即关闭文件
         elif isinstance(config, dict):
             config_data = config
         else:

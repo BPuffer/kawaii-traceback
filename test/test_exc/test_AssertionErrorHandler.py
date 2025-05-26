@@ -3,8 +3,9 @@
 """
 
 import pytest
-from ..utils.utils import KTBTestBase
+
 from kawaiitb.handlers.defaults import AssertionErrorHandler
+from test.utils.utils import KTBTestBase
 
 
 class TestAssertionError(KTBTestBase, console_output=False):

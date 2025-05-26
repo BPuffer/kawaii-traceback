@@ -1,6 +1,7 @@
 import pytest
-from ..utils.utils import KTBTestBase
+
 from kawaiitb.handlers.defaults import ZeroDivisionErrorHandler
+from test.utils.utils import KTBTestBase
 
 
 class TestZeroDivisionError(KTBTestBase, console_output=False):

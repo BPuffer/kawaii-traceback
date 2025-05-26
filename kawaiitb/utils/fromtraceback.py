@@ -88,8 +88,8 @@ def get_code_position(code, instruction_index):
     return next(itertools.islice(positions_gen, instruction_index // 2, None))
 
 
-def byte_offset_to_character_offset(str, offset):
-    as_utf8 = str.encode('utf-8')
+def byte_offset_to_character_offset(str_, offset):
+    as_utf8 = str_.encode('utf-8')
     return len(as_utf8[:offset].decode("utf-8", errors="replace"))
 
 

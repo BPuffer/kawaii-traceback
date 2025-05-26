@@ -1,12 +1,16 @@
 import sys
-from typing import Any, Callable
+from io import TextIOWrapper, StringIO
+from typing import Any, Callable, TextIO, Union
 
 import kawaiitb.utils.fromtraceback as fromtraceback
 
 sys_getframe = sys._getframe  # noqa
 
-__all__ = ["sys_getframe", "format_final_exc_line", "extract_caret_anchors_from_line_segment", "safe_string",
-    "fromtraceback", *fromtraceback.__all__, ]
+readables = (TextIO, TextIOWrapper, StringIO)
+SupportsReading = Union[*readables]
+
+__all__ = ["sys_getframe", "extract_caret_anchors_from_line_segment", "safe_string",
+           "fromtraceback", *fromtraceback.__all__, ]
 
 
 def safe_string(value: Any, what: str, func: Callable[[Any], str] = str):
@@ -14,15 +18,6 @@ def safe_string(value: Any, what: str, func: Callable[[Any], str] = str):
         return func(value)
     except:
         return f'<{what} {func.__name__}() failed>'
-
-
-def format_final_exc_line(etype: str, value: BaseException):
-    valuestr = safe_string(value, 'exception')
-    if value is None or not valuestr:
-        line = "%s\n" % etype
-    else:
-        line = "%s: %s\n" % (etype, valuestr)
-    return line
 
 
 def extract_caret_anchors_from_line_segment(segment):

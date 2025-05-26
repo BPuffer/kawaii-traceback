@@ -1,22 +1,25 @@
-import pytest
-import kawaiitb
-from kawaiitb import kraceback
-from kawaiitb import KTBException
+"""
+提供测试基类 KTBTestBase 和测试工具函数。
 
-__CONFIG__ = {
-    "translate_keys": {
-        "__test__": {
-            "extend": "zh_hans"
-        }
-    },
-    "default_lang": "__test__"
-}
+如果某个测试单独运行正常，整体运行时会失败，可以在整个类的第一个测试前
+手动运行 `setup_test()` 来加载异常语言。
+
+pytest真的很会整花活。
+"""
+
+import pytest
+
+import kawaiitb
+from kawaiitb import KTBException
+from kawaiitb import kraceback
+
 
 @pytest.fixture(scope="class")
 def kawaii_tb_config():
-    kawaiitb.load_config(__CONFIG__)
+    kawaiitb.load("neko_zh")
     yield
     kawaiitb.unload()
+
 
 class KTBTestBase:
     console_output = False
@@ -36,5 +39,13 @@ class KTBTestBase:
         messages = list(handler.handle(ktb))
         return ktb, handler, messages, "".join(messages)
 
+
 def raise_error(ExceptionType=Exception, msg="test"):
     raise ExceptionType(msg)
+
+
+def setup_test(lang="neko_zh", **kwargs):
+    kawaiitb.load(lang, **kwargs)
+
+def teardown_test():
+    kawaiitb.unload()

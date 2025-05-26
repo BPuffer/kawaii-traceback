@@ -119,13 +119,14 @@ DEFAULT_CONFIG = {
             "exception.exc_line_noval": "[{etype}]!\n",
             "exception.exc_line": "[{etype}] {value}\n",
         },
-        "qb": {  # 二次扩展示例
+        "kirakira": {  # 二次扩展示例
             "extend": "neko_zh",
+            "stack.summary": "☆pypy被玩坏了☆这肯定不是py的问题☆绝对不是☆\n",
             "config.prompt1": "✧⋆˚｡~˚~｡> ",
             "config.prompt2": "✧ :*✧･ﾟ:| ",
         }
     },
-    "default_lang": "qb",
+    "default_lang": "neko_zh",
 }
 
 if __name__ == "__main__":

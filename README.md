@@ -2,7 +2,7 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/kawaii-traceback)](https://pypi.org/project/kawaii-traceback/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/kawaii-traceback)](https://pypi.org/project/kawaii-traceback/)
-[![License](https://img.shields.io/pypi/l/kawaii-traceback)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/licenses/MIT)
 
 一个可爱的Python异常美化工具，提供更友好的错误提示和多语言支持。
 

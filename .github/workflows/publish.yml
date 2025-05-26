@@ -13,7 +13,7 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
+      name: pypi
     
     steps:
       - uses: actions/checkout@v4
@@ -33,4 +33,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-          repository-url: https://test.pypi.org/legacy/
+          repository-url: https://upload.pypi.org/legacy/

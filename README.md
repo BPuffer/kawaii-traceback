@@ -23,13 +23,10 @@ pip install kawaii-traceback
 ## 🚀 快速开始
 
 ```python
-import tools
-import kawaiitb;
-
-tools.load('neko_zh')  # 加载猫娘配置
+import kawaiitb.autoload  # noqa
 
 # 现在所有异常都会以可爱的方式显示
-2 / 0
+1 / 0
 ```
 
 ## 🌍 多语言支持
@@ -38,12 +35,12 @@ tools.load('neko_zh')  # 加载猫娘配置
 
 ```python
 # 加载中文提示
-import tools
+import kawaiitb
 
-tools.load('zh_hans')
+kawaiitb.load('zh_hans')
 
 # 或者加载猫娘版提示
-tools.load('neko_zh')
+kawaiitb.load('neko_zh')
 ```
 
 ## 🛠 配置
@@ -67,8 +64,9 @@ tools.load('neko_zh')
 ## 🤝 贡献
 
 欢迎提交Issue和PR！请确保：
-1. 代码需与已有风格一致
-2. 添加相应的测试用例
+1. 开发新功能前请先创建Issue
+2. 代码需与已有风格一致
+3. 添加相应的测试用例
 
 ## 📜 许可证
 

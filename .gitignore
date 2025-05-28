@@ -16,3 +16,8 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# other
+desktop.ini
+.DS_Store
+Thumbs.db

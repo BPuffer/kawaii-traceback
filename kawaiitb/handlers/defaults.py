@@ -710,7 +710,7 @@ TODOS = {
             "AssertionError": "AssertionErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
             "AttributeError": "AttributeErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
             "BufferError": "过于过于罕见了，能碰见的基本都是在玩底层的人，没必要给他们讲解，不设计",
-            "EOFError": "EOFErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
+            "EOFError": "EOFErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
             "ImportError": {
                 "ImportError": "ImportErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
                 "ModuleNotFoundError": "ModuleNotFoundErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO

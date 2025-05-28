@@ -533,7 +533,7 @@ class StackSummary(list[FrameSummary]):
                 end_offset = byte_offset_to_character_offset(line, frame_summary.end_colno)
                 code_segment = line[start_offset:end_offset]
 
-                # 如果是单行问题帧, 语法树定位到引起错误的BinOp(+-*/等)或Subscript(a[b])操作
+                # 如果是单行问题帧, 语法树定位到引起错误的操作
                 offsets = None
                 if frame_summary.lineno == frame_summary.end_lineno:
                     with suppress(Exception):
@@ -986,3 +986,4 @@ class KTBException:
             file = sys.stderr
         for line in self.format(chain=chain):
             print(line, file=file, end="")
+

@@ -5,7 +5,7 @@ signatures. Due to significant variations in traceback.py across
 different Python versions, it provides stable Python implementation
 interfaces for consistent functionality implementation.
 
-The source code references CPython 3.12.8 and adheres to the following
+The source code references CPython 3.12 and adheres to the following
 licensing terms:
 
 Copyright (c) 2001-2024 Python Software Foundation.
@@ -20,8 +20,8 @@ All Rights Reserved.
 Copyright (c) 1991-1995 Stichting Mathematisch Centrum, Amsterdam.
 All Rights Reserved.
 
-Used under the PSF LICENSE AGREEMENT FOR PYTHON 3.12.8:
-https://docs.python.org/3/license.html
+Used under the PSF LICENSE AGREEMENT FOR PYTHON 3.12:
+https://docs.python.org/3.12/license.html
 """
 import itertools
 import sys

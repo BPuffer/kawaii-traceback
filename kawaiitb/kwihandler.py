@@ -91,18 +91,18 @@ class ErrorSuggestHandler:
         """
         ...
 
-    def handle(self, etype: KTBException) -> Generator[str, None, None]:
+    def handle(self, ktb_exc: KTBException) -> Generator[str, None, None]:
         """
         处理异常，返回一个生成器，生成器会逐行产生处理后的错误信息。
         并不一定非要每行一定断一下，这只是为了模块的灵活性，如果你需要输出确定不变的多行信息，直接写就是了。
         """
-        stype = etype.exc_type.__qualname__
-        smod = etype.exc_type.__module__
+        stype = ktb_exc.exc_type.__qualname__
+        smod = ktb_exc.exc_type.__module__
         if smod not in ("__main__", "builtins"):
             if not isinstance(smod, str):
                 smod = "<unknown>"
             stype = smod + '.' + stype
-        yield rc.exc_line(stype, etype.final_exc_str)
+        yield rc.exc_line(stype, ktb_exc.final_exc_str)
 
     @staticmethod
     @final

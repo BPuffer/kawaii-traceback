@@ -153,7 +153,8 @@ def override(excepthook=True, console_prompt=None):
                     "Please report this to the KawaiiTB developers.\n"
                 ]
 
-        sys.excepthook = lambda etype, value, tb: sys.stderr.write(''.join(wrapped(etype, value, tb)))
+        wrapped.__kawaiitb__ = True  # take over by KawaiiTB
+        sys.excepthook = wrapped
 
     if (
             console_prompt is True and

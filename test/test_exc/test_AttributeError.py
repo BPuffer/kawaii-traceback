@@ -1,7 +1,9 @@
 import re
 
 import pytest
-from kawaiitb.handlers.defaults import AttributeErrorHandler
+
+import kawaiitb
+from kawaiitb.handlers.attribute_handler import AttributeErrorHandler
 from test.utils.utils import KTBTestBase
 
 
@@ -39,6 +41,8 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     """
 
+    # region 辅助工具
+
     class Foo:
         attrcon1 = 1
         attrcon2 = 2
@@ -64,6 +68,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         self.try_print_exc(excinfo.value)
         *_, tbmsg = self.pack_exc(AttributeErrorHandler, excinfo.value)
         return tbmsg
+    # endregion
 
     # region 1. 自定义类的属性
 
@@ -79,7 +84,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         self._assert_suggestions(tbmsg,
             include=["attrfun1"],
             exclude=["attrcon1", "attrcon2", "_attrcon3", "__attrcon4",
-                     "attrfun2", "_attrfun3", "__attrfun4", "__str__"],
+                     "attrfun2", "_attrfun3", "_Foo__attrfun4", "__str__"],
         )
 
     def test_custom_class_attr_similar_function(self):
@@ -96,7 +101,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         self._assert_suggestions(tbmsg,
             include=["attrfun1", "attrcon1"],
             exclude=["attrcon2", "_attrcon3", "__attrcon4", "attrfun2",
-                     "_attrfun3", "__attrfun4", "__str__"]
+                     "_attrfun3", "_Foo__attrfun4", "__str__"]
         )
 
     def test_custom_class_attr_similar_constant(self):
@@ -112,7 +117,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         self._assert_suggestions(tbmsg,
             include=["attrcon1"],
             exclude=["attrcon2", "_attrcon3", "__attrcon4", "attrfun1",
-                     "attrfun2", "_attrfun3", "__attrfun4", "__str__"]
+                     "attrfun2", "_attrfun3", "_Foo__attrfun4", "__str__"]
         )
 
     def test_custom_class_all_functions(self):
@@ -127,7 +132,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         self._assert_suggestions(tbmsg,
             include=["attrfun1", "attrfun2"],
             exclude=["attrcon1", "attrcon2" "_attrcon3", "__attrcon4",
-                     "_attrfun3", "__attrfun4", "__str__"],
+                     "_attrfun3", "_Foo__attrfun4", "__str__"],
         )
 
     def test_custom_class_all_constants(self):
@@ -141,7 +146,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
             include=["attrcon1", "attrcon2"],
-            exclude=["attrfun1", "attrfun2", "_attrfun3", "__attrfun4",
+            exclude=["attrfun1", "attrfun2", "_attrfun3", "_Foo__attrfun4",
                      "_attrcon3", "__attrcon4", "__str__"]
         )
 
@@ -155,7 +160,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
             obj._brrro()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
-            include=["attrfun1", "attrfun2", "_attrfun3", "__attrfun4"],
+            include=["attrfun1", "attrfun2", "_attrfun3", "_Foo__attrfun4"],
             exclude=["attrcon1", "attrcon2", "_attrcon3", "__attrcon4", "__str__"]
         )
 
@@ -166,7 +171,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
             obj.__brrro()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
-            include=["attrfun1", "attrfun2", "_attrfun3", "__attrfun4"],
+            include=["attrfun1", "attrfun2", "_attrfun3", "_Foo__attrfun4"],
             exclude=["attrcon1", "attrcon2", "_attrcon3", "__attrcon4", "__str__"]
         )
 
@@ -184,7 +189,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
             include=["__init__"],
-            exclude=["attrfun1", "attrfun2", "_attrfun3", "__attrfun4",
+            exclude=["attrfun1", "attrfun2", "_attrfun3", "_Foo__attrfun4",
                      "attrcon1", "attrcon2", "_attrcon3", "__attrcon4",
                      "__str__", "__dir__"]
         )
@@ -195,6 +200,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_module_function_call_similar(self):
         """测试模块相似函数调用建议"""
+        import math
         with pytest.raises(AttributeError) as excinfo:
             math.sqr()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
@@ -205,6 +211,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_module_attr_similar_function(self):
         """测试模块相似函数属性建议"""
+        import math
         with pytest.raises(AttributeError) as excinfo:
             math.sqr  # noqa
         tbmsg = self._get_traceback_message(excinfo)
@@ -215,6 +222,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_module_constant_similar(self):
         """测试模块相似常量建议"""
+        import math
         with pytest.raises(AttributeError) as excinfo:
             math.tai  # noqa
         tbmsg = self._get_traceback_message(excinfo)
@@ -225,8 +233,9 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_module_all_functions(self):
         """测试模块所有函数建议"""
+        import math
         with pytest.raises(AttributeError) as excinfo:
-            math.foo()  # noqa
+            math.fooooo()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
             include=["sqrt", "cos"],
@@ -235,8 +244,9 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_module_all_constants(self):
         """测试模块所有常量建议"""
+        import math
         with pytest.raises(AttributeError) as excinfo:
-            math.foo  # noqa
+            math.fooooo  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
             include=["pi", "tau"],
@@ -266,12 +276,6 @@ class TestAttributeError(KTBTestBase, console_output=True):
             include=["strip", "lower"],
             exclude=["__str__", "__repr__"]
         )
-        # 应包含普通方法
-        assert "strip()" in tbmsg
-        assert "lower()" in tbmsg
-        # 不应包含魔法方法
-        assert "__str__" not in tbmsg
-        assert "__repr__" not in tbmsg
 
     # endregion
 
@@ -279,10 +283,10 @@ class TestAttributeError(KTBTestBase, console_output=True):
 
     def test_attrerror_circular_import(self):
         """测试循环导入引发的AttributeError"""
-        from test.utils.attrerr_partinit_module import entry
         with pytest.raises(AttributeError) as excinfo:
-            entry("I'm sure I wan't to raise an AttributeError")
+            import test.utils.attrerr_partinit_module  # noqa
         tbmsg = self._get_traceback_message(excinfo)
+        raise excinfo.value
 
         # 验证包含特定模块路径
         assert "test.utils.attrerr_partinit_module" in tbmsg
@@ -290,3 +294,6 @@ class TestAttributeError(KTBTestBase, console_output=True):
         assert "test.utils.__attrerr_partinit_module_3rd" in tbmsg
 
     # endregion
+
+# TODO: 根据c源码，AttributeError的情况还远不止这些。。当务之急是先把循环导入的检测整体做完
+

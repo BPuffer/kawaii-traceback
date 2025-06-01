@@ -131,7 +131,7 @@ class ImportErrorSuggestHandler(ErrorSuggestHandler, priority=1.1):
             yield rc.translate("native.import_error_suggestion.hint", suggestion=self.suggestion)
 
 
-@KTBException.register
+# @KTBException.register
 class NameAttributeErrorSuggestHandler(ErrorSuggestHandler, priority=1.1):
     """
     本处理器模仿原生的NameError的拼写错误检测

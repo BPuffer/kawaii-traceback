@@ -131,7 +131,7 @@ class ImportErrorSuggestHandler(ErrorSuggestHandler, priority=1.1):
             yield rc.translate("native.import_error_suggestion.hint", suggestion=self.suggestion)
 
 
-# @KTBException.register
+# @KTBException.register  # 正在考虑完全移除，或使用更通用的处理器 NameError和AttributeError 的Handler替代
 class NameAttributeErrorSuggestHandler(ErrorSuggestHandler, priority=1.1):
     """
     本处理器模仿原生的NameError的拼写错误检测
@@ -691,11 +691,70 @@ class EOFErrorHandler(ErrorSuggestHandler, priority=1.0):
         self.err_msg = rc.translate(self.err_msg_key)
         yield rc.exc_line("EOFError", self.err_msg)
 
+
+@KTBException.register
+class KeyboardInterruptHandler(ErrorSuggestHandler, priority=1.0):
+    """
+    KeyboardInterrupt异常处理器
+
+    当用户按下Ctrl+C时，会抛出KeyboardInterrupt异常
+    ```
+>>> # 用户按下Ctrl+C
+
+...
+... Traceback (most recent call last):
+...   File "<input>", line 1, in <module>
+(-) KeyboardInterrupt
+    改为:
+(1) [KeyboardInterrupt] 手动终止了程序
+    ```
+    """
+
+    def __init__(self, exc_type, exc_value, exc_traceback, **kwargs):
+        super().__init__(exc_type, exc_value, exc_traceback, **kwargs)
+        self._can_handle = issubclass(exc_type, KeyboardInterrupt)
+
+    def can_handle(self, ktb_exc) -> bool:
+        return self._can_handle
+
+    @classmethod
+    def translation_keys(cls):
+        return {
+            "default": {
+                "native.KeyboardInterrupt.msg": "Program interrupted by user",
+            },
+            "zh_hans": {
+                "native.KeyboardInterrupt.msg": "手动终止了程序",
+                "native.KeyboardInterrupt.msg_extra": "手动终止了程序：{extra}",
+            }
+        }
+
+    def handle(self, ktb_exc) -> Generator[str, None, None]:
+        if not str(ktb_exc).strip():
+            yield rc.exc_line("KeyboardInterrupt", rc.translate("native.KeyboardInterrupt.msg"))
+        else:
+            yield rc.exc_line("KeyboardInterrupt", rc.translate("native.KeyboardInterrupt.msg_extra", extra=str(ktb_exc)))
+
+class SystemExitHandler(ErrorSuggestHandler, priority=1.0):
+    """
+    SystemExit异常处理器
+>>> exit(114514)
+
+... Traceback (most recent call last):
+...   File "<input>", line 1, in <module>
+(-) SystemExit: 114514
+    改为:
+(1) [SystemExit] 程序退出
+    """
+    def __init__(self, exc_type, exc_value, exc_traceback, **kwargs):
+        super().__init__(exc_type, exc_value, exc_traceback, **kwargs)
+        self._can_handle = issubclass(exc_type, SystemExit)
+
 TODOS = {
     "BaseException": {
         "BaseException": "不设计。这个异常过于抽象，基本没人会单独抛",
-        "SystemExit": "SystemExitHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
-        "KeyboardInterrupt": "KeyboardInterruptHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
+        "SystemExit": "不设计。这个异常不应该是被捕获的。",
+        "KeyboardInterrupt": "KeyboardInterruptHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
         "GeneratorExit": "不要设计，因为这个异常不会被显示",
         "Exception": {
             "Exception": "不设计。这个异常过于抽象，基本没人会单独抛",
@@ -708,12 +767,12 @@ TODOS = {
                 "ZeroDivisionError": "ZeroDivisionErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
             },
             "AssertionError": "AssertionErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
-            "AttributeError": "AttributeErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
+            "AttributeError": "AttributeErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
             "BufferError": "过于过于罕见了，能碰见的基本都是在玩底层的人，没必要给他们讲解，不设计",
             "EOFError": "EOFErrorHandler(ErrorSuggestHandler, priority=1.0)",  # Complete
             "ImportError": {
                 "ImportError": "ImportErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
-                "ModuleNotFoundError": "ModuleNotFoundErrorHandler(ErrorSuggestHandler, priority=1.0)",  # TODO
+                "ModuleNotFoundError": "ModuleNotFoundErrorHandler(ErrorSuggestHandler, priority=1.05)",  # TODO
             },
             "LookupError": {
                 "LookupError": "不设计。这个异常过于抽象，基本没人会单独抛",

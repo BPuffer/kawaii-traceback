@@ -4,14 +4,14 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/kawaii-traceback)](https://pypi.org/project/kawaii-traceback/)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/licenses/MIT)
 
-一个可爱的Python异常美化工具，提供更友好的错误提示和多语言支持。
+一个可爱的Python异常美化工具，提供更友好的错误提示和多语言支持
 
 ## ✨ 特性
 
 - 可爱的异常输出格式
-- 智能错误建议（拼写检查、导入提示等）及可扩展性
-- 多语言支持（英语、简体中文等）及可扩展性
-- 可定制的主题和样式
+- 智能错误建议（拼写检查、导入提示、Traceback简化等）及可扩展性
+- 高度的多语言可扩展性
+- 高度可定制的提示信息（甚至可以对自定义场景自定义提示）
 - 兼容标准Python traceback模块
 
 ## 📦 安装
@@ -53,7 +53,7 @@ kawaiitb.load('neko_zh')
     "my_neko": {
       "extend": "zh_hans",
       "native.ZeroDivisionError.msg": "{divisor}变成零了喵！不能除以零喵不能除以零喵！",
-      "native.NameError.msg": "你确定{name}存在喵？"
+      "native.AttributeError.premsg": "{type_} 类型的 '{obj}' 没有属性 '{name}' 喵！"
     }
   },
   "default_lang": "my_neko"

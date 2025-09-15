@@ -145,13 +145,17 @@ def override(excepthook=True, console_prompt=None):
             try:
                 value, tb = parse_value_tb(exc, value, tb)
                 te = KTBException(type(value), value, tb, limit=limit, compact=True)
-                return list(te.format(chain=chain))
+                for line in te.format(chain=chain):
+                    sys.stderr.write(line)
+                    sys.stderr.flush()
             except Exception as ktb_self_raised_exc:
-                return orig_format_exception(exc, value=_sentinel, tb=_sentinel, limit=None, chain=True) + [
-                    "\n\nKawaiiTB occurred another exception while formatting this exception:\n"
-                ] + list(orig_format_exception(ktb_self_raised_exc)) + [
-                    "Please report this to the KawaiiTB developers.\n"
-                ]
+                orig_format_exception(exc, value=_sentinel, tb=_sentinel, limit=None, chain=True)
+                sys.stderr.write("\nKawaiiTB occurred another exception while formatting this exception:\n")
+                sys.stderr.flush()
+                orig_format_exception(exc, value=_sentinel, tb=_sentinel, limit=None, chain=True)
+                sys.stderr.write("\nPlease report this to the KawaiiTB developers.\n")
+                sys.stderr.flush()
+            sys.stderr.flush()
 
         wrapped.__kawaiitb__ = True  # take over by KawaiiTB
         sys.excepthook = wrapped

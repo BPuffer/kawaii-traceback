@@ -308,6 +308,19 @@ class TestAttributeError(KTBTestBase, console_output=True):
         tbmsg = self._get_traceback_message(excinfo)
         assert "变量 'keyword' 的名字覆盖了标准库模块。'kwlist' 存在于对应的标准库中。" in tbmsg
 
+    # TODO: 移动到NameError大类下
+    def test_nameerror_var_in_self(self_test):
+        class Foo:
+            def __init__(self):
+                self.attr = 1
+            def bar(self):
+                return f"{attr}"  # noqa
+        with pytest.raises(AttributeError) as excinfo:
+            foo = Foo()
+            foo.bar()
+        tbmsg = self_test._get_traceback_message(excinfo)
+        assert "self.attr" in tbmsg
+
     # endregion
 
 # AttributeError的情况。或不完整

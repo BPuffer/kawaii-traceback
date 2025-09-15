@@ -35,9 +35,9 @@ class TestAttributeError(KTBTestBase, console_output=True):
       从 test.utils.attrerr_partinit_module 导入 entry 函数, 然后
       调用 entry("I'm sure I wan't to raise an AttributeError") 会产生 AttributeError. 捕捉这个异常.
       输出结果中应该包含:
-        - "test.utils.attrerr_partinit_module" 字样
-        - "test.utils.__attrerr_partinit_module_2nd" 字样
-        - "test.utils.__attrerr_partinit_module_3rd" 字样
+        - "attrerr_partinit_module" 文件
+        - "__attrerr_partinit_module_2nd" 文件
+        - "__attrerr_partinit_module_3rd" 文件
 
     """
 
@@ -238,7 +238,7 @@ class TestAttributeError(KTBTestBase, console_output=True):
             math.fooooo()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
-            include=["sqrt", "cos"],
+            include=["acos", "asin"],
             exclude=["pi", "tau"]
         )
 
@@ -264,8 +264,9 @@ class TestAttributeError(KTBTestBase, console_output=True):
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
             include=["strip"],
-            exclude=["lower"]
+            exclude=["capitalize"]
         )
+        assert "..." not in tbmsg
 
     def test_builtin_all_methods(self):
         """测试内置对象所有方法"""
@@ -273,9 +274,10 @@ class TestAttributeError(KTBTestBase, console_output=True):
             "  str ing\n".foooo()  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         self._assert_suggestions(tbmsg,
-            include=["strip", "lower"],
-            exclude=["__str__", "__repr__"]
+            include=["capitalize", "casefold"],
+            exclude=["__str__", "__repr__", "zfill"]
         )
+        assert "..." in tbmsg
 
     # endregion
 
@@ -286,14 +288,48 @@ class TestAttributeError(KTBTestBase, console_output=True):
         with pytest.raises(AttributeError) as excinfo:
             import test.utils.attrerr_partinit_module  # noqa
         tbmsg = self._get_traceback_message(excinfo)
-        raise excinfo.value
+        assert "attrerr_partinit_module.py" in tbmsg
+        assert "__attrerr_partinit_module_2nd.py" in tbmsg
+        assert "__attrerr_partinit_module_3rd.py" in tbmsg
 
-        # 验证包含特定模块路径
-        assert "test.utils.attrerr_partinit_module" in tbmsg
-        assert "test.utils.__attrerr_partinit_module_2nd" in tbmsg
-        assert "test.utils.__attrerr_partinit_module_3rd" in tbmsg
+    def test_attrerror_stdlib_rename(self):
+        """测试模块与标准库重名引发的AttributeError"""
+        with pytest.raises(AttributeError) as excinfo:
+            import test.utils.keyword as keyword  # noqa
+            _ = "class" in keyword.kwlist  # noqa
+        tbmsg = self._get_traceback_message(excinfo)
+        assert "模块 'keyword' 的名字覆盖了标准库模块。'kwlist' 存在于对应的标准库中。" in tbmsg
+
+    def test_attrerror_stdlib_rename2(self):
+        """测试变量与标准库重名引发的AttributeError"""
+        with pytest.raises(AttributeError) as excinfo:
+            keyword = "keyword"  # noqa
+            _ = "class" in keyword.kwlist  # noqa
+        tbmsg = self._get_traceback_message(excinfo)
+        assert "变量 'keyword' 的名字覆盖了标准库模块。'kwlist' 存在于对应的标准库中。" in tbmsg
 
     # endregion
 
-# TODO: 根据c源码，AttributeError的情况还远不止这些。。当务之急是先把循环导入的检测整体做完
-
+# AttributeError的情况。或不完整
+#
+# "'%.100s' object has no attribute '%U'"
+# "'%.100s' object has no attribute '%U' and no __dict__ for setting new attributes"
+# "type object '%.50s' has no attribute '%U'"
+# "type object '%.100s' has no attribute '%U'"
+# "'%.100s' object attribute '%U' is read-only"
+# "readonly attribute"
+# "object %.50s does not have %U method"
+# "cannot delete attribute"
+# "can't delete attribute"
+# "This object has no __weakref__"
+# "This object has no __dict__"
+# "type object '%s' has no attribute '__annotations__'"
+# "type object '%s' has no attribute '__annotate__'"
+#
+# "module '%U' has no attribute '%U'"
+# "module has no attribute '%U'"
+# "module '%U' has no attribute '%U' (consider renaming '%U' since it has the same name as the standard library module named '%U' and prevents importing that standard library module)"
+# "module '%U' has no attribute '%U' (consider renaming '%U' if it has the same name as a library you intended to import)"
+# "partially initialized module '%U' from '%U' has no attribute '%U' (most likely due to a circular import)"
+# "partially initialized module '%U' has no attribute '%U' (most likely due to a circular import)"
+# "cannot access submodule '%U' of module '%U' (most likely due to a circular import)"

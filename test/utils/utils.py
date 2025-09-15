@@ -30,7 +30,9 @@ class KTBTestBase:
 
     def try_print_exc(self, e):
         if self.console_output:
+            print("\033[35m")
             print("".join(kraceback.format_exception(e)))
+            print("\033[39m")
 
     def pack_exc(self, HandlerType, exc):
         ktb = KTBException.from_exception(exc)

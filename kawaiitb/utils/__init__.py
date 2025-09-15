@@ -10,7 +10,7 @@ readables = (TextIO, TextIOWrapper, StringIO)
 SupportsReading = Union[*readables]
 
 __all__ = ["sys_getframe", "extract_caret_anchors_from_line_segment", "safe_string",
-           "fromtraceback", *fromtraceback.__all__, ]
+           "fromtraceback", "is_sysstdlib_name", *fromtraceback.__all__, ]
 
 
 def safe_string(value: Any, what: str, func: Callable[[Any], str] = str):
@@ -18,6 +18,10 @@ def safe_string(value: Any, what: str, func: Callable[[Any], str] = str):
         return func(value)
     except:
         return f'<{what} {func.__name__}() failed>'
+
+
+def is_sysstdlib_name(name: str) -> bool:
+    return name in sys.builtin_module_names or name in sys.stdlib_module_names
 
 
 def extract_caret_anchors_from_line_segment(segment):

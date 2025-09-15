@@ -125,7 +125,7 @@ class ErrorSuggestHandler:
 class ImportErrorHandler(ErrorSuggestHandler, priority=2.0):
     ...
 
-#@KTBException.register 使用装饰器可以注册处理器。本示例中暂不使用。
+#@KTBException.register  # 使用装饰器可以注册处理器。本示例中暂不使用。
 class PyYamlImportErrorHandler(ImportErrorHandler, priority=4.0):
     """
     在pyyaml导入失败时提供更详细的解决方案。

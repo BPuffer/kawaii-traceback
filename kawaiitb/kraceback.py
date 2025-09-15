@@ -10,8 +10,10 @@ import itertools
 import linecache
 import os
 import sys
+import sysconfig
 from contextlib import suppress
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional, Type, TYPE_CHECKING, Generator
 
 from kawaiitb.runtimeconfig import rc
@@ -317,13 +319,8 @@ class FrameSummary:
     def line(self):
         return self.load_line()
 
-
-import os
-import sysconfig
-from pathlib import Path
-
 def parse_module_filename(filename: str) -> str:
-    """处理模块文件名，返回格式化后的显示字符串（跨平台优化版）"""
+    """处理模块文件名，返回格式化后的显示字符串"""
     # 优先处理标准库路径
     stdlib_path = Path(sysconfig.get_path("stdlib")).resolve()
     try:

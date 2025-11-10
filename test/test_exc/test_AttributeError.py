@@ -7,7 +7,7 @@ from kawaiitb.handlers.attribute_handler import AttributeErrorHandler
 from test.utils.utils import KTBTestBase
 
 
-class TestAttributeError(KTBTestBase, console_output=True):
+class TestAttributeError(KTBTestBase, console_output=False, packing_handler=AttributeErrorHandler):
     """
     完成TestAttributeError。要完成判断的有以下几类：
     1. 自定义类的属性
@@ -62,12 +62,6 @@ class TestAttributeError(KTBTestBase, console_output=True):
             assert item in suggestions
         for item in exclude:
             assert item not in suggestions
-
-    def _get_traceback_message(self, excinfo):
-        """辅助函数：获取 traceback 信息"""
-        self.try_print_exc(excinfo.value)
-        *_, tbmsg = self.pack_exc(AttributeErrorHandler, excinfo.value)
-        return tbmsg
     # endregion
 
     # region 1. 自定义类的属性
@@ -307,20 +301,6 @@ class TestAttributeError(KTBTestBase, console_output=True):
             _ = "class" in keyword.kwlist  # noqa
         tbmsg = self._get_traceback_message(excinfo)
         assert "变量 'keyword' 的名字覆盖了标准库模块。'kwlist' 存在于对应的标准库中。" in tbmsg
-
-    # TODO: 移动到NameError大类下
-    def test_nameerror_var_in_self(self_test):
-        class Foo:
-            def __init__(self):
-                self.attr = 1
-            def bar(self):
-                return f"{attr}"  # noqa
-        with pytest.raises(AttributeError) as excinfo:
-            foo = Foo()
-            foo.bar()
-        tbmsg = self_test._get_traceback_message(excinfo)
-        assert "self.attr" in tbmsg
-
     # endregion
 
 # AttributeError的情况。或不完整

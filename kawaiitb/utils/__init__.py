@@ -1,6 +1,10 @@
+import os
+import site
 import sys
+from functools import lru_cache
 from io import TextIOWrapper, StringIO
-from typing import Any, Callable, TextIO, Union
+from pathlib import Path
+from typing import Any, Callable, TextIO, Union, overload
 
 import kawaiitb.utils.fromtraceback as fromtraceback
 
@@ -67,3 +71,157 @@ def extract_caret_anchors_from_line_segment(segment):
                     return left_anchor, right_anchor
 
     return None
+
+def _combine_subpath(file_exec_path, frame_co_filename) -> str:
+    """
+    安全地补全b_path的绝对路径，优先匹配最后面的相同目录
+
+    Args:
+        file_exec_path: 执行中的__file__的绝对路径
+        frame_co_filename: 需要补全的相对路径
+
+    Returns:
+        补全后的绝对路径
+    """
+    # 将路径转换为Path对象并标准化
+    a_abs = Path(file_exec_path).resolve()
+    b_parts = Path(frame_co_filename).parts
+
+    # 将a_path转换为目录列表
+    a_parts = list(a_abs.parts)
+
+    # 在a_path中从后往前查找与b_path开头匹配的位置
+    b_start = b_parts[0]
+    match_indices = []
+
+    # 找到所有可能的匹配位置
+    for i in range(len(a_parts) - 1, -1, -1):
+        if a_parts[i] == b_start:
+            match_indices.append(i)
+
+    if not match_indices:
+        raise ValueError(f"在路径 {file_exec_path} 中找不到与 {b_start} 匹配的目录")
+
+    # 尝试每个匹配位置，找到最合适的
+    for match_idx in match_indices:
+        # 检查从这个位置开始是否能完整匹配b_path的开头部分
+        match_len = min(len(a_parts) - match_idx, len(b_parts))
+        can_match = True
+
+        for j in range(match_len):
+            if a_parts[match_idx + j] != b_parts[j]:
+                can_match = False
+                break
+
+        if can_match:
+            # 构建补全路径：a_path的前面部分 + b_path的剩余部分
+            result_parts = a_parts[:match_idx] + list(b_parts)
+            return str(Path(*result_parts))
+
+    # 如果没有完整匹配，使用最后一个匹配位置
+    last_match_idx = match_indices[0]  # 因为是从后往前找的，第一个就是最后一个匹配
+    result_parts = a_parts[:last_match_idx] + list(b_parts)
+    return str(Path(*result_parts))
+
+def get_module_file_key(frame, frame_co_filename=None) -> str:
+    """获取模块的完整路径，破解Cython等奇行种"""
+    @lru_cache
+    def unsafe_get_module_file_key(frame, frame_co_filename=None):
+        file_exec_path = frame.f_globals.get('__file__', None)
+        if not file_exec_path:
+            return frame_co_filename
+        if frame_co_filename and os.path.isabs(file_exec_path):
+            return _combine_subpath(file_exec_path, frame_co_filename)
+        return _combine_subpath(file_exec_path, frame_co_filename)
+    try:
+        filename = unsafe_get_module_file_key(frame, frame_co_filename)
+    except:
+        filename = frame.f_code.co_filename
+    # print(f'[DEBUG] get_module_file_key: turn {frame.f_code.co_filename} -> {filename}')
+    return filename
+
+
+def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
+    """处理模块文件名，返回格式化后的命名空间和显示字符串"""
+    # print(f'[DEBUG] 开始解析 {filename}, {env.stdlib_path=}, {env.cwd=}')
+
+    if not env:
+        # print(f'[DEBUG] no env {filename}')
+        return '', filename
+    assert os.path.isabs(filename)
+
+    # 标准化路径，确保使用相同的分隔符
+    filename = os.path.normpath(filename)
+    cwd = os.path.normpath(env.cwd)
+
+    def _parse_path_with_site_packages(filename: str, base_path: str) -> tuple[str, str] | None:
+        """解析路径，处理标准库和site-packages中的模块"""
+        # print(f'[DEBUG] 尝试解析到sp: {filename=}, {base_path=}')
+        if filename.startswith(base_path):
+            rel_path = os.path.relpath(filename, base_path)
+            parts = rel_path.split(os.sep)
+
+            # 处理site-packages中的第三方库
+            if len(parts) > 1 and parts[0] == 'site-packages':
+                # print(f'[DEBUG] 成功解析到sp from {parts}')
+                return parts[1], str(
+                    os.path.join(
+                        *parts[1:]
+                    )
+                                     )
+            else:
+                # 标准库模块
+                module_name = parts[0]
+                if module_name.lower() in {'__init__', 'lib'}:
+                    return None
+                if module_name.endswith('.py'):
+                    module_name = module_name[:-3]
+                # print(f'[DEBUG] 成功解析到标准库 from {parts}')
+                return module_name, str(os.path.join(*parts))
+        # print(f'[DEBUG] 解析失败')
+        return None
+
+    # 检查是否在工作目录里面的环境下
+    for path in env.site_packages_paths_which_after_cwd:
+        result = _parse_path_with_site_packages(filename, str(path))
+        if result:
+            # print(f'[DEBUG] 解析到sp {result}')
+            return result
+
+    # 检查是否在工作目录下
+    if filename.startswith(cwd):
+        rel_path = os.path.relpath(filename, cwd)
+        # 工作区文件，返回当前目录标记和相对路径
+        # print(f'[DEBUG] 解析到工作目录 {filename} ({cwd=})')
+        return '.', rel_path
+
+    # 检查是否在其他库路径下
+    for path in env.site_packages_paths - env.site_packages_paths_which_after_cwd:
+        result = _parse_path_with_site_packages(filename, str(path))
+        if result:
+            # print(f'[DEBUG] 解析到sp {result}')
+            return result
+
+    # 默认情况，返回文件名
+    base_name = os.path.basename(filename)
+    if base_name.endswith('.py'):
+        base_name = base_name[:-3]
+    # print(f'[DEBUG] 完全解析失败')
+    return base_name, base_name
+
+
+def get_translated_filename(namespace, completly_raw_filename, display_filename, rc) -> str:
+    """获取翻译后的文件名"""
+    filename = completly_raw_filename if rc.translate('config.file.include_cwd') else display_filename
+    if namespace == '.':  # 当前目录，工作区文件
+        return filename
+    # 可能是包，返回格式化后的文件名
+    return rc.translate("config.file.parsed_filename", namespace=namespace, filename=filename)
+
+def parse_get_translated_filename(filename: str, env, rc) -> str:
+    """解析模块文件名并获取翻译后的文件名"""
+    ns, df = parse_module_filename(filename, env)
+    return get_translated_filename(ns, filename, df, rc)
+
+def get_this_module_frame():
+    return sys_getframe(0)

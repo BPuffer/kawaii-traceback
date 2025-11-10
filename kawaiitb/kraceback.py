@@ -9,6 +9,7 @@ import collections.abc
 import itertools
 import linecache
 import os
+import site
 import sys
 import sysconfig
 from contextlib import suppress
@@ -17,11 +18,15 @@ from pathlib import Path
 from typing import Optional, Type, TYPE_CHECKING, Generator
 
 from kawaiitb.runtimeconfig import rc
-from kawaiitb.utils import sys_getframe, extract_caret_anchors_from_line_segment, safe_string
+from kawaiitb.utils import (
+    sys_getframe, extract_caret_anchors_from_line_segment,
+    safe_string, get_module_file_key, parse_module_filename,
+    get_translated_filename
+)
 from kawaiitb.utils.fromtraceback import (
     sentinel, parse_value_tb, walk_tb_with_full_positions,
     byte_offset_to_character_offset, walk_stack,
-    ExceptionPrintContext, display_width,
+    ExceptionPrintContext, display_width
 )
 
 if TYPE_CHECKING:
@@ -34,13 +39,21 @@ class _ENV:
 
     def update(self):
         """更新环境信息"""
-        self.cwd = os.getcwd()
-        self.platform = sys.platform
-
-    def __getattr__(self, name):
-        """按需获取新属性时自动更新"""
-        self.update()
-        return super().__getattribute__(name)
+        self.cwd = os.getcwd()  # C:\Users\usr\project(\test)?
+        self.platform = sys.platform  # win32
+        # C:\path\to\global\Python312
+        self.stdlib_path = Path(sys.base_prefix).joinpath("Lib").resolve()
+        # C:\path\to\projecct\.venv\Lib
+        self.venv_stdlib = Path(sys.prefix).joinpath("Lib").resolve()
+        self.site_packages = site.getsitepackages()
+        self.site_packages_paths = set(
+            [Path(p).resolve()
+            for p in self.site_packages] +
+            [self.venv_stdlib, self.stdlib_path]
+        )
+        self.site_packages_paths_which_after_cwd = set(
+            [p for p in self.site_packages_paths if p.is_relative_to(self.cwd)]
+        )
 
 ENV = _ENV()
 
@@ -319,54 +332,6 @@ class FrameSummary:
     def line(self):
         return self.load_line()
 
-def parse_module_filename(filename: str) -> str:
-    """处理模块文件名，返回格式化后的显示字符串"""
-    # 优先处理标准库路径
-    stdlib_path = Path(sysconfig.get_path("stdlib")).resolve()
-    try:
-        abs_path = Path(filename).resolve().relative_to(stdlib_path)
-        parts = abs_path.parts
-        if parts:
-            return rc.translate(
-                "config.file.parsed_filename",
-                namespace=parts[0],
-                filename=os.sep.join(parts)
-            )
-    except ValueError:
-        pass
-
-    # 工作区文件处理
-    cwd = Path(ENV.cwd).resolve()
-    try:
-        rel_path = Path(filename).resolve().relative_to(cwd)
-        if not rc.translate("config.file.include_cwd"):
-            return str(rel_path)
-        return filename
-    except ValueError:
-        pass
-
-    # 第三方包路径检测
-    normalized = os.path.normpath(filename).replace("\\", "/").lower()
-    patterns = [
-        ("site-packages", 1),  # 匹配层级
-        ("dist-packages", 1),
-        ("lib/python", 2),     # 跳过版本号目录
-        ("lib64/python", 2),
-        ("/python", 2),       # Windows 路径如 C:/Python312/Lib/
-    ]
-
-    for pattern, skip in patterns:
-        index = normalized.find(f"/{pattern}/")
-        if index != -1:
-            parts = normalized[index+1:].split("/")[skip+1:]
-            if parts:
-                return rc.translate(
-                    "config.file.parsed_filename",
-                    namespace=parts[0],
-                    filename=os.sep.join(parts)
-                )
-
-    return filename
 
 
 # _RECURSIVE_CUTOFF = 3  # Also hardcoded in traceback.c.
@@ -433,6 +398,9 @@ class StackSummary(list[FrameSummary]):
             co = f.f_code  # 获取代码对象
 
             filename = co.co_filename  # 获取文件名
+            if not filename.startswith("<") and not os.path.isabs(filename):
+                filename = get_module_file_key(f, filename)
+
             fnames.add(filename)  # 添加文件名到集合中
 
             name = co.co_name  # 获取函数名
@@ -485,7 +453,7 @@ class StackSummary(list[FrameSummary]):
         都会调用此方法。
         """
         # 文件名，据此判断是否为工作区，并判断是否包含工作区路径
-        filename = parse_module_filename(frame_summary.filename)
+        namespace, display_filename = parse_module_filename(frame_summary.filename, ENV)
 
         # 函数名，判断是否为模块级语句并翻译
         name = frame_summary.name
@@ -495,15 +463,16 @@ class StackSummary(list[FrameSummary]):
             name = rc.translate("config.string")
 
         # 格式化帧信息行
+        display_filename_translated = get_translated_filename(namespace, frame_summary.filename, display_filename, rc)
         if frame_summary.colno is not None:
             row = [rc.translate('frame.location.with_column',
-                                file=filename,
+                                file=display_filename_translated,
                                 name=name,
                                 lineno=frame_summary.lineno,
                                 colno=frame_summary.colno)]
         else:
             row = [rc.translate('frame.location.without_column',
-                                file=frame_summary.filename,
+                                file=display_filename_translated,
                                 lineno=frame_summary.lineno,
                                 name=frame_summary.name)]
 
@@ -640,6 +609,7 @@ class StackSummary(list[FrameSummary]):
 class KTBException:
     """
     一个准备好进行渲染的异常对象。
+    请使用`from kawaiitb import KTBException`，否则可能因导入顺序造成错误
 
     回溯模块会从原始异常中捕获足够的属性到这个中间形式，以确保不保留任何引用，
     同时仍然能够完整地打印或格式化该异常。
@@ -862,7 +832,7 @@ class KTBException:
                 hi_priority = handler.priority
                 hi_priority_handler = handler
 
-        assert hi_priority_handler is not None, "No handler found for this exception. Why kwihandler.ErrorSuggestHandler not here?"
+        assert hi_priority_handler is not None, "No handler found for this exception. Use KTBException by `from kawaiitb import KTBException`"
         yield from hi_priority_handler.handle(self)
 
 
@@ -877,7 +847,7 @@ class KTBException:
             yield "{}\n".format(safe_string(self.__notes__, '__notes__', func=repr))
 
 
-    def format(self, *, chain =True, _ctx=None) -> Generator[str, None, None]:
+    def format(self, *, chain=True, _ctx=None) -> Generator[str, None, None]:
         """格式化异常.
 
         如果 chain 不为 True，__cause__ 和 __context__ 不会递归地格式化。

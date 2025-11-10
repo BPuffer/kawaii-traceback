@@ -3,10 +3,10 @@ import inspect
 
 import astroid
 
-from kawaiitb.kraceback import KTBException, parse_module_filename
+from kawaiitb.kraceback import KTBException, parse_module_filename, ENV
 from kawaiitb.kwihandler import ErrorSuggestHandler
 from kawaiitb.runtimeconfig import rc
-from kawaiitb.utils import safe_string, is_sysstdlib_name
+from kawaiitb.utils import safe_string, is_sysstdlib_name, parse_get_translated_filename
 from kawaiitb.utils.suggestions import find_weighted_closest_matches, VarsGroup, merge_sorted_suggestions
 
 
@@ -180,7 +180,7 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
                 path_low = rc.translate("native.AttributeError.interdependents_loop_table_low")
                 for i, filename in enumerate(loop):
                     path_table = path_top if i == 0 else path_mid if i < len(loop) - 1 else path_low
-                    path += f"{path_table}{parse_module_filename(filename)}\n"
+                    path += f"{path_table}{parse_get_translated_filename(filename, ENV, rc)}\n"
                 yield rc.translate("native.AttributeError.interdependents_with_loop", obj=self.obj_module_name, attr=attr_rawname, path=path)
                 return
             else:

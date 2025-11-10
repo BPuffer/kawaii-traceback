@@ -24,9 +24,10 @@ def kawaii_tb_config():
 class KTBTestBase:
     console_output = False
 
-    def __init_subclass__(cls, console_output=False, **kwargs):
+    def __init_subclass__(cls, console_output=False, packing_handler=None, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.console_output = console_output
+        cls.packing_handler = packing_handler
 
     def try_print_exc(self, e):
         if self.console_output:
@@ -34,12 +35,17 @@ class KTBTestBase:
             print("".join(kraceback.format_exception(e)))
             print("\033[39m")
 
-    def pack_exc(self, HandlerType, exc):
+    def pack_exc(self, HandlerType, exc) -> tuple[KTBException, kawaiitb.ErrorSuggestHandler, list[str], str]:
         ktb = KTBException.from_exception(exc)
         handler = HandlerType(type(exc), exc, exc.__traceback__)
         assert handler.can_handle(ktb)
         messages = list(handler.handle(ktb))
         return ktb, handler, messages, "".join(messages)
+
+    def _get_traceback_message(self, excinfo):
+        self.try_print_exc(excinfo.value)
+        *_, tbmsg = self.pack_exc(self.packing_handler, excinfo.value)
+        return tbmsg
 
 
 def raise_error(ExceptionType=Exception, msg="test"):

@@ -86,6 +86,10 @@ class _ENV:
             [p for p in self.site_packages_paths if str(self.cwd) in str(p)]
         )
 
+    def get_invalid_site_packages_paths(self):
+        """获取无效的site-packages路径"""
+        return {'site-packages', 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}',
+                f'python{sys.version_info.major}'}
 
 ENV = _ENV()
 

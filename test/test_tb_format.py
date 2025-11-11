@@ -57,7 +57,7 @@ class TestExceptionFormatting(KTBTestBase, console_output=True):
         except Exception as e:
             tb = "".join(kawaiitb.traceback.format_exception(e))
             self.try_print_exc(e)
-            assert "asyncio 模块" in tb  # 显示模块名
+            assert "[asyncio" in tb  # 显示模块名
             # 截断到lib或者site-packages
             assert "asyncio" + os.sep in tb
             assert os.sep + "asyncio" not in tb

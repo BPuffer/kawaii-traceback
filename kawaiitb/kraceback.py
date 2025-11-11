@@ -11,7 +11,6 @@ import linecache
 import os
 import site
 import sys
-import sysconfig
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path

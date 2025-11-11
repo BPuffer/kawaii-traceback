@@ -164,11 +164,10 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
             # 处理site-packages中的第三方库
             if len(parts) > 1 and parts[0] == 'site-packages':
                 # print(f'[DEBUG] 成功解析到sp from {parts}')
-                return parts[1], str(
-                    os.path.join(
-                        *parts[1:]
-                    )
-                                     )
+                package_name = parts[1]
+                if package_name.endswith('.py'):
+                    package_name = package_name[:-3]
+                return package_name, str(os.path.join(*parts[1:]))
             else:
                 # 标准库模块
                 module_name = parts[0]

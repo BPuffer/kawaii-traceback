@@ -27,16 +27,19 @@ def test_parse_module_filename_win():
         Path('C:/Users/usr/Desktop/project/.venv/Lib/site-packages'),
 
     }
-    ENV = type('ENV', (), {
-        'cwd': cwd,
-        'site_packages_paths': spp,
-        'site_packages_paths_which_after_cwd': set(
-            [p for p in spp if p.is_relative_to(cwd)]
-        )
-    })
+    class ENV:
+        def __init__(self):
+            self.cwd = cwd
+            self.site_packages_paths = spp
+            self.site_packages_paths_which_after_cwd = set(
+                [p for p in spp if p.is_relative_to(cwd)]
+            )
+        def get_invalid_site_packages_paths(self):
+            return kawaiitb.kraceback._ENV().get_invalid_site_packages_paths()
+    env = ENV()
 
     for file_path, expected_module, expected_relative_path in test_cases:
-        module, relative_path = parse_module_filename(file_path, env=ENV)
+        module, relative_path = parse_module_filename(file_path, env=env)
         module = module.replace('\\', '/')
         relative_path = relative_path.replace('\\', '/')
         assert module == expected_module, f"Failed for {file_path}: expected module '{expected_module}', got '{module}'"
@@ -82,6 +85,8 @@ def test_parse_module_filename_linux():
             self.site_packages_paths_which_after_cwd = set(
                 [p for p in spp if p.is_relative_to(cwd)]
             )
+        def get_invalid_site_packages_paths(self):
+            return kawaiitb.kraceback._ENV().get_invalid_site_packages_paths()
 
     env = ENV()
 

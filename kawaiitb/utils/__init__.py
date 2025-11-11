@@ -148,7 +148,6 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
     if not env:
         # print(f'[DEBUG] no env {filename}')
         return '', filename
-    assert os.path.isabs(filename)
 
     # 标准化路径，确保使用相同的分隔符
     filename = os.path.normpath(filename)

@@ -1,10 +1,11 @@
 import pytest
 
 import kawaiitb
+from kraceback import ENV
 from test.utils.utils import KTBTestBase, setup_test
 
 
-class TestExceptionFormatting(KTBTestBase, console_output=True):
+class TestExceptionFormatting(KTBTestBase, console_output=False):
     def test_recursive_exception(self):
         """测试递归异常深度溢出"""
         setup_test()
@@ -57,10 +58,10 @@ class TestExceptionFormatting(KTBTestBase, console_output=True):
         except Exception as e:
             tb = "".join(kawaiitb.traceback.format_exception(e))
             self.try_print_exc(e)
-            assert "[asyncio" in tb  # 显示模块名
+            assert ("[asyncio" in tb), f"{ENV.site_packages_paths=}"
             # 截断到lib或者site-packages
-            assert "asyncio" + os.sep in tb
-            assert os.sep + "asyncio" not in tb
+            assert ("asyncio" + os.sep in tb), f"{ENV.site_packages_paths=}"
+            assert (os.sep + "asyncio" not in tb), f"{ENV.site_packages_paths=}"
 
     @pytest.mark.skip(reason="TODO")
     def test_long_line_formatting(self):

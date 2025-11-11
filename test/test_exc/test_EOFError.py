@@ -5,7 +5,7 @@ from unittest import mock
 from test.utils.utils import KTBTestBase
 from kawaiitb.handlers.defaults import EOFErrorHandler
 
-class TestEOFError(KTBTestBase, console_output=True):
+class TestEOFError(KTBTestBase, console_output=False):
     @mock.patch("sys.stdin", StringIO(""))
     def test_eof_error(self):
         """测试EOFError"""

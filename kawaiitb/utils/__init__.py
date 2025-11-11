@@ -164,16 +164,14 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
                     package_name = package_name[:-3]
                 return package_name, str(os.path.join(*parts[1:]))
             else:
-                # 标准库模块 - 关键修复：正确处理标准库路径
-                # 对于标准库，我们取第一个有意义的目录名作为模块名
-                for part in parts:
-                    if part and not part.startswith('__') and part.lower() not in env.get_invalid_site_packages_paths():
-                        module_name = part
-                        if module_name.endswith('.py'):
-                            module_name = module_name[:-3]
-                        return module_name, str(os.path.join(*parts))
-                # 如果找不到合适的模块名，返回None
-                return None
+                first_part = parts[0]  # 必须为第一目录，不能向后逐个查找
+                if first_part and not first_part.startswith('__') and first_part.lower() not in env.get_invalid_site_packages_paths():
+                    module_name = first_part
+                    if module_name.endswith('.py'):
+                        module_name = module_name[:-3]
+                    return module_name, str(os.path.join(*parts))
+                else:
+                    return None
         return None
 
     # 检查是否在relative to工作目录下的虚拟环境下。提前检查避免误认为是工作目录。

@@ -87,9 +87,9 @@ class _ENV:
         )
 
     def get_invalid_site_packages_paths(self):
-        """获取无效的site-packages路径"""
+        """获取无效的site-packages路径。仅小写，使用时需转换为小写比较"""
         return {'site-packages', 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}',
-                f'python{sys.version_info.major}'}
+                f'python3'}
 
 ENV = _ENV()
 

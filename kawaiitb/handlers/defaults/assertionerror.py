@@ -1,6 +1,6 @@
 from typing import Generator
 
-import astroid
+from astroid import nodes
 
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
@@ -57,14 +57,14 @@ class AssertionErrorHandler(ErrorSuggestHandler, priority=1.0):
         assert_exprs: set[str] = set()
         exc_frame = ktb_exc.stack[0]
         for node in self.parse_ast_from_exc(exc_frame, parse_line=True):
-            if not isinstance(node, astroid.Assert):
+            if not isinstance(node, nodes.Assert):
                 continue
             expr = node.test
             assert_expr = expr.as_string()
             if not assert_expr:
                 continue
             # 收集断言表达式中的变量名
-            if isinstance(expr, astroid.Compare):
+            if isinstance(expr, nodes.Compare):
                 # 比较表达式: a == b, a > b > c 等
                 assert_exprs.add(expr.left.as_string())
                 for _, right in expr.ops:
@@ -72,34 +72,34 @@ class AssertionErrorHandler(ErrorSuggestHandler, priority=1.0):
                     # TODO: 支持递归的表达式
                     # 问题: 如何判断递归下的表达式是用户所需要看到的
                     # 阻力: 断言表达式通常大道至简, 甚至第二层嵌套都很少看到, 实用型存疑
-            elif isinstance(expr, astroid.BoolOp):
+            elif isinstance(expr, nodes.BoolOp):
                 # 布尔运算: a and b and c 等
                 assert_exprs.add(expr.as_string())
                 for value in expr.values:
-                    if isinstance(value, astroid.Name):
+                    if isinstance(value, nodes.Name):
                         assert_exprs.add(value.as_string())
-            elif isinstance(expr, astroid.Name):
+            elif isinstance(expr, nodes.Name):
                 # 简单变量: assert a
                 assert_exprs.add(expr.as_string())
-            elif isinstance(expr, astroid.Call):
+            elif isinstance(expr, nodes.Call):
                 # 函数调用: assert a()
                 # 如果函数以"is""not""has"开头, 则取得所有函数参数, 否则只取整个表达式的值
-                if isinstance(expr.func, astroid.Name):
+                if isinstance(expr.func, nodes.Name):
                     func_name = expr.func.as_string().split(".")[-1]
                     if func_name.startswith(("is", "not", "has")):
                         [
                             assert_exprs.add(arg.as_string())
                             for arg in expr.args
-                            if isinstance(arg, (astroid.Name, astroid.Expr))
+                            if isinstance(arg, (nodes.Name, nodes.Expr))
                         ]
                         # for arg in expr.args:
                         #     assert_exprs.add(arg.as_string())
                     else:
                         assert_exprs.add(expr.as_string())
-            elif isinstance(expr, (astroid.BinOp, astroid.UnaryOp)):
+            elif isinstance(expr, (nodes.BinOp, nodes.UnaryOp)):
                 # 一二元运算等直接求值, 这些变量的最终值不是布尔, 用户只需要这个值.
                 for operand in [expr.left, expr.right]:
-                    if isinstance(operand, astroid.Name):
+                    if isinstance(operand, nodes.Name):
                         assert_exprs.add(operand.as_string())
             break
 

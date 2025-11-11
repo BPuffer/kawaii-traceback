@@ -1,4 +1,5 @@
 import astroid
+from astroid import nodes
 
 
 def is_point_before(line: int, col: int, start_line: int, start_col: int):
@@ -25,7 +26,7 @@ def is_point_inside(line: int, col: int, start_line: int, end_line: int, start_c
     )
 
 
-def is_completely_inside(node: astroid.nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
+def is_completely_inside(node: nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
     if any((
         not hasattr(node, 'lineno') or node.lineno is None,
         not hasattr(node, 'col_offset') or node.col_offset is None,
@@ -38,7 +39,7 @@ def is_completely_inside(node: astroid.nodes.NodeNG, start_line: int, end_line: 
     )
 
 
-def is_partially_inside(node: astroid.nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
+def is_partially_inside(node: nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
     if any((
         not hasattr(node, 'lineno') or node.lineno is None,
         not hasattr(node, 'col_offset') or node.col_offset is None,
@@ -51,11 +52,11 @@ def is_partially_inside(node: astroid.nodes.NodeNG, start_line: int, end_line: i
     )
 
 
-def astroid_walk_inside(node: astroid.nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
+def astroid_walk_inside(node: nodes.NodeNG, start_line: int, end_line: int, start_col: int, end_col: int):
     if is_completely_inside(node, start_line, end_line, start_col, end_col):
         yield node
     for child in node.get_children():  # 这里不能检查部分包含，因为部分大节点可能缺结束位，无法判断是否包含
-        if isinstance(child, astroid.nodes.NodeNG) and \
+        if isinstance(child, nodes.NodeNG) and \
                 is_partially_inside(child, start_line, end_line, start_col, end_col):
             yield from astroid_walk_inside(child, start_line, end_line, start_col, end_col)
 

@@ -1,6 +1,7 @@
 from typing import Generator
 
 import astroid
+from astroid import nodes
 
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
@@ -68,8 +69,8 @@ class StopIterationHandler(ErrorSuggestHandler, priority=1.0):  # 原生
                 #     func=Name(name=next),
                 #     args=[...])
                 if (
-                        isinstance(node, astroid.Call) and  # 是函数调用
-                        isinstance(node.func, astroid.Name) and  # 是显式函数名
+                        isinstance(node, nodes.Call) and  # 是函数调用
+                        isinstance(node.func, nodes.Name) and  # 是显式函数名
                         node.func.name == 'next'  # 是next调用
                 ):
                     self.generator = node.args[0].as_string()
@@ -81,8 +82,8 @@ class StopIterationHandler(ErrorSuggestHandler, priority=1.0):  # 原生
                 #         attrname=__next__),
                 #     args=[...])
                 if (
-                    isinstance(node, astroid.Call) and  # 是函数调用
-                    isinstance(node.func, astroid.Attribute) and  # 是属性访问
+                    isinstance(node, nodes.Call) and  # 是函数调用
+                    isinstance(node.func, nodes.Attribute) and  # 是属性访问
                     node.func.attrname == '__next__'  # 是__next__方法调用
                 ):
                     # 获取生成器表达式字符串

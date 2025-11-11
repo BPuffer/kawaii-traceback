@@ -1,6 +1,7 @@
 from typing import Generator
 
 import astroid
+from astroid import nodes
 
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
@@ -64,9 +65,9 @@ class ZeroDivisionErrorHandler(ErrorSuggestHandler, priority=1.0):
             #     op=Div(),
             #     right=Num(n=0))
             if (
-                isinstance(node, astroid.BinOp) and node.op == '/' and  # 是转浮点除
-                isinstance(node.left, astroid.Const) and node.left.value == 1 and  # 被除数是1  # noqa
-                isinstance(node.right, astroid.Const) and node.right.value == 0  # 除数是0
+                isinstance(node, nodes.BinOp) and node.op == '/' and  # 是转浮点除
+                isinstance(node.left, nodes.Const) and node.left.value == 1 and  # 被除数是1  # noqa
+                isinstance(node.right, nodes.Const) and node.right.value == 0  # 除数是0
             ):
                 # 输入1/0触发彩蛋
                 import random
@@ -74,7 +75,7 @@ class ZeroDivisionErrorHandler(ErrorSuggestHandler, priority=1.0):
                 yield rc.exc_line("KawaiiTB", egg)
                 break
             elif(
-                isinstance(node, astroid.BinOp) and node.op in ('/', '//')  # 是除法
+                isinstance(node, nodes.BinOp) and node.op in ('/', '//')  # 是除法
             ):
                 # 这就够了。不需要太麻烦的匹配，二元操作的错误帧定位本身就很精准了
                 if self.exc_value is None or \

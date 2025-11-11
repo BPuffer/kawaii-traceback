@@ -1,6 +1,7 @@
 from typing import Generator
 
 import astroid
+from astroid import nodes
 
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
@@ -65,8 +66,8 @@ class StopAsyncIterationHandler(ErrorSuggestHandler, priority=1.0):  # 原生
                 #     func=Name(name=anext),
                 #     args=[...])
                 if (
-                    isinstance(node, astroid.Call) and  # 是函数调用
-                    isinstance(node.func, astroid.Name) and  # 是显式函数名
+                    isinstance(node, nodes.Call) and  # 是函数调用
+                    isinstance(node.func, nodes.Name) and  # 是显式函数名
                     node.func.name == 'anext'  # 是anext调用
                 ):
                     self.generator = node.args[0].as_string()
@@ -78,8 +79,8 @@ class StopAsyncIterationHandler(ErrorSuggestHandler, priority=1.0):  # 原生
                 #         attrname=__anext__),
                 #     args=[...])
                 if (
-                    isinstance(node, astroid.Call) and  # 是函数调用
-                    isinstance(node.func, astroid.Attribute) and  # 是属性访问
+                    isinstance(node, nodes.Call) and  # 是函数调用
+                    isinstance(node.func, nodes.Attribute) and  # 是属性访问
                     node.func.attrname == '__anext__'  # 是__anext__方法调用
                 ):
                     # 获取异步生成器表达式字符串
@@ -90,7 +91,7 @@ class StopAsyncIterationHandler(ErrorSuggestHandler, priority=1.0):  # 原生
                 #     target=<?>,
                 #     iter=<?>,
                 #     body=[...])
-                if isinstance(node, astroid.AsyncFor):
+                if isinstance(node, nodes.AsyncFor):
                     self.generator = node.iter.as_string()
                     break
 

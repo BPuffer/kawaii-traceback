@@ -2,6 +2,7 @@ from typing import Generator
 import inspect
 
 import astroid
+from astroid import nodes
 
 from kawaiitb.kraceback import KTBException, ENV
 from kawaiitb.kwihandler import ErrorSuggestHandler
@@ -136,7 +137,7 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
         obj_rawname = self.obj_rawname
         attr_rawname = self.wrong_name
         for node in self.parse_ast_from_exc(exc_frame):
-            if isinstance(node, (astroid.Import, astroid.ImportFrom)):
+            if isinstance(node, (nodes.Import, nodes.ImportFrom)):
                 extra_hint = ""
                 if is_sysstdlib_name(self.obj_rawname) and self.obj_is_module:
                     extra_hint = rc.translate("native.AttributeError.rename_from_shadowing_stdlib")
@@ -144,8 +145,8 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
                                                                  obj_module_name=self.obj_module_name,
                                                                  name=attr_rawname) + extra_hint)
                 break
-            if isinstance(node, astroid.Attribute):
-                if not isinstance(node.expr, (astroid.Name, astroid.Const)):  # 找出最终的不可进一步分解的节点
+            if isinstance(node, nodes.Attribute):
+                if not isinstance(node.expr, (nodes.Name, nodes.Const)):  # 找出最终的不可进一步分解的节点
                     continue
                 obj_rawname = node.expr.as_string()
                 attr_rawname = node.attrname
@@ -162,7 +163,7 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
                         pass
 
 
-                if isinstance(node.parent, astroid.Call):
+                if isinstance(node.parent, nodes.Call):
                     wrong_usage_type += "C"
                 else:
                     wrong_usage_type += "P"

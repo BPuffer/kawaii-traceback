@@ -171,7 +171,7 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
                 # 标准库模块
                 module_name = parts[0]
                 if module_name.lower() in {'__init__', 'lib'}:
-                    return None
+                    return None  # 不能返回Lib目录
                 if module_name.endswith('.py'):
                     module_name = module_name[:-3]
                 # print(f'[DEBUG] 成功解析到标准库 from {parts}')

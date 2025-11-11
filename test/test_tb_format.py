@@ -58,10 +58,11 @@ class TestExceptionFormatting(KTBTestBase, console_output=False):
         except Exception as e:
             tb = "".join(kawaiitb.traceback.format_exception(e))
             self.try_print_exc(e)
-            assert ("[asyncio" in tb), f"{ENV.site_packages_paths=}"
+            info = f"{ENV.site_packages_paths=}, {[stack.filename for stack in kawaiitb.KTBException.from_exception(e).stack]}"
+            assert ("[asyncio" in tb), info
             # 截断到lib或者site-packages
-            assert ("asyncio" + os.sep in tb), f"{ENV.site_packages_paths=}"
-            assert (os.sep + "asyncio" not in tb), f"{ENV.site_packages_paths=}"
+            assert ("asyncio" + os.sep in tb), info
+            assert (os.sep + "asyncio" not in tb), info
 
     @pytest.mark.skip(reason="TODO")
     def test_long_line_formatting(self):

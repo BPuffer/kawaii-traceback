@@ -1,7 +1,7 @@
 import pytest
 
 import kawaiitb
-from kraceback import ENV
+from kawaiitb.kraceback import ENV
 from test.utils.utils import KTBTestBase, setup_test
 
 

@@ -3,7 +3,7 @@ import inspect
 
 import astroid
 
-from kawaiitb.kraceback import KTBException, parse_module_filename, ENV
+from kawaiitb.kraceback import KTBException, ENV
 from kawaiitb.kwihandler import ErrorSuggestHandler
 from kawaiitb.runtimeconfig import rc
 from kawaiitb.utils import safe_string, is_sysstdlib_name, parse_get_translated_filename

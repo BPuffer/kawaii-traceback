@@ -14,7 +14,7 @@ __description__ = "A kawaii Python traceback beautifier with multilingual suppor
 import sys
 
 import kawaiitb.kraceback as traceback
-from kawaiitb.handlers import __all__ as _handlers
+import kawaiitb.handlers as handlers
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
 from kawaiitb.runtimeconfig import rc, load_config
@@ -28,5 +28,5 @@ __all__ = [
     "ErrorSuggestHandler",
     "KTBException",
     "load_config",
-    *_handlers,
+    *handlers.__all__,
 ]

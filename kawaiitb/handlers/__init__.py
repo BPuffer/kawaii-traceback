@@ -1,11 +1,9 @@
-from .defaults import *
-from .attribute_handler import AttributeErrorHandler
-from .extensions import *
+import kawaiitb.handlers.defaults as defaults
+import kawaiitb.handlers.extensions as extensions
+import kawaiitb.handlers.vanilla as vanilla
 
-# __all__ = [
-#     "AttributeErrorHandler",
-#     ...  # TODO: 显式列出所有的处理器. 等全写完再来写这个.
-# ]
 __all__ = [
-    "AttributeErrorHandler",
+    *defaults.__all__,
+    *extensions.__all__,
+    *vanilla.__all__,
 ]

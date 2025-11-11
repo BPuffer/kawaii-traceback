@@ -2,8 +2,7 @@ import re
 
 import pytest
 
-import kawaiitb
-from kawaiitb.handlers.attribute_handler import AttributeErrorHandler
+from kawaiitb.handlers.defaults import AttributeErrorHandler
 from test.utils.utils import KTBTestBase
 
 

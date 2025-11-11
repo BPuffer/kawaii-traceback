@@ -5,7 +5,7 @@ import pytest
 import kawaiitb
 from kawaiitb.utils import parse_module_filename
 
-@pytest.skipif(os.name != 'nt', reason="Windows-specific test")
+@pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
 def test_parse_module_filename_win():
     """Test parse_module_filename with various file paths."""
     test_cases = [
@@ -42,7 +42,7 @@ def test_parse_module_filename_win():
         assert module == expected_module, f"Failed for {file_path}: expected module '{expected_module}', got '{module}'"
         assert relative_path == expected_relative_path, f"Failed for {file_path}: expected relative path '{expected_relative_path}', got '{relative_path}'"
 
-@pytest.skipif(os.name != 'posix', reason="Linux-specific test")
+@pytest.mark.skipif(os.name != 'posix', reason="Linux-specific test")
 def test_parse_module_filename_linux():
     """Test parse_module_filename with various file paths."""
     test_cases = [

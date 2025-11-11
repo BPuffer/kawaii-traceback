@@ -6,7 +6,7 @@ import kawaiitb
 from kawaiitb import kraceback
 from test.utils.utils import KTBTestBase
 
-class TestExceptionFromLibs(KTBTestBase, console_output=False, packing_handler=kawaiitb.ErrorSuggestHandler):
+class TestExceptionFromLibs(KTBTestBase, console_output=True, packing_handler=kawaiitb.ErrorSuggestHandler):
     def test_from_std_lib(self):
         """测试从stdlib引发的错误，这里尝试错误地解码SGVsbG8为base64"""
         with pytest.raises(Exception) as excinfo:
@@ -16,6 +16,7 @@ class TestExceptionFromLibs(KTBTestBase, console_output=False, packing_handler=k
         stream = io.StringIO()
         kraceback.print_exception(excinfo.value, file=stream)
         fulltb = stream.getvalue()
+        self.try_print_exc(excinfo.value)
         assert "[base64" in fulltb
 
     def test_from_third_party_lib(self):
@@ -27,6 +28,7 @@ class TestExceptionFromLibs(KTBTestBase, console_output=False, packing_handler=k
         stream = io.StringIO()
         kraceback.print_exception(excinfo.value, file=stream)
         fulltb = stream.getvalue()
+        self.try_print_exc(excinfo.value)
         assert "[numpy" in fulltb
 
 

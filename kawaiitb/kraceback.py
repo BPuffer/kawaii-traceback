@@ -36,23 +36,56 @@ class _ENV:
     def __init__(self):
         self.update()
 
+    def get_stdlib_paths(self):
+        """获取所有可能的标准库路径"""
+        paths = set()
+
+        # 基础标准库路径
+        if hasattr(sys, 'base_prefix'):
+            base_paths = [
+                Path(sys.base_prefix).joinpath("Lib"),
+                Path(sys.base_prefix).joinpath("lib"),  # Linux/Mac
+                Path(sys.base_prefix).joinpath("lib", f"python{sys.version_info.major}.{sys.version_info.minor}"),
+                Path(sys.base_prefix).joinpath("lib", f"python{sys.version_info.major}"),
+            ]
+            for path in base_paths:
+                if path.exists():
+                    paths.add(path.resolve())
+
+        # 当前环境的库路径
+        if hasattr(sys, 'prefix'):
+            prefix_paths = [
+                Path(sys.prefix).joinpath("Lib"),
+                Path(sys.prefix).joinpath("lib"),  # Linux/Mac
+                Path(sys.prefix).joinpath("lib", f"python{sys.version_info.major}.{sys.version_info.minor}"),
+                Path(sys.prefix).joinpath("lib", f"python{sys.version_info.major}"),
+            ]
+            for path in prefix_paths:
+                if path.exists():
+                    paths.add(path.resolve())
+
+        return paths
+
     def update(self):
         """更新环境信息"""
-        self.cwd = os.getcwd()  # C:\Users\usr\project(\test)?
-        self.platform = sys.platform  # win32
-        # C:\path\to\global\Python312
-        self.stdlib_path = Path(sys.base_prefix).joinpath("Lib").resolve()
-        # C:\path\to\projecct\.venv\Lib
-        self.venv_stdlib = Path(sys.prefix).joinpath("Lib").resolve()
+        self.cwd = os.getcwd()
+        self.platform = sys.platform
+
+        # 获取标准库路径
+        self.stdlib_paths = self.get_stdlib_paths()
+
+        # 获取site-packages路径
         self.site_packages = site.getsitepackages()
         self.site_packages_paths = set(
-            [Path(p).resolve()
-            for p in self.site_packages] +
-            [self.venv_stdlib, self.stdlib_path]
+            [Path(p).resolve() for p in self.site_packages] +
+            list(self.stdlib_paths)  # 包含标准库路径
         )
+
+        # 找出在工作目录之后的路径
         self.site_packages_paths_which_after_cwd = set(
-            [p for p in self.site_packages_paths if p.is_relative_to(self.cwd)]
+            [p for p in self.site_packages_paths if str(self.cwd) in str(p)]
         )
+
 
 ENV = _ENV()
 

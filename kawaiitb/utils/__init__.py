@@ -167,7 +167,7 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
                 # 标准库模块 - 关键修复：正确处理标准库路径
                 # 对于标准库，我们取第一个有意义的目录名作为模块名
                 for part in parts:
-                    if part and not part.startswith('__') and part != 'lib' and not part.startswith('python'):
+                    if part and not part.startswith('__') and part.lower() != 'lib' and part.lower() != 'site-packages' and not part.startswith('python'):
                         module_name = part
                         if module_name.endswith('.py'):
                             module_name = module_name[:-3]

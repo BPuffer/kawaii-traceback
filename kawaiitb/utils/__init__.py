@@ -143,10 +143,8 @@ def get_module_file_key(frame, frame_co_filename=None) -> str:
 
 def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
     """处理模块文件名，返回格式化后的命名空间和显示字符串"""
-    # print(f'[DEBUG] 开始解析 {filename}, {env.stdlib_path=}, {env.cwd=}')
 
     if not env:
-        # print(f'[DEBUG] no env {filename}')
         return '', filename
 
     # 标准化路径，确保使用相同的分隔符
@@ -155,56 +153,50 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
 
     def _parse_path_with_site_packages(filename: str, base_path: str) -> tuple[str, str] | None:
         """解析路径，处理标准库和site-packages中的模块"""
-        # print(f'[DEBUG] 尝试解析到sp: {filename=}, {base_path=}')
         if filename.startswith(base_path):
             rel_path = os.path.relpath(filename, base_path)
             parts = rel_path.split(os.sep)
 
             # 处理site-packages中的第三方库
             if len(parts) > 1 and parts[0] == 'site-packages':
-                # print(f'[DEBUG] 成功解析到sp from {parts}')
                 package_name = parts[1]
                 if package_name.endswith('.py'):
                     package_name = package_name[:-3]
                 return package_name, str(os.path.join(*parts[1:]))
             else:
-                # 标准库模块
-                module_name = parts[0]
-                if module_name.lower() in {'__init__', 'lib'}:
-                    return None  # 不能返回Lib目录
-                if module_name.endswith('.py'):
-                    module_name = module_name[:-3]
-                # print(f'[DEBUG] 成功解析到标准库 from {parts}')
-                return module_name, str(os.path.join(*parts))
-        # print(f'[DEBUG] 解析失败')
+                # 标准库模块 - 关键修复：正确处理标准库路径
+                # 对于标准库，我们取第一个有意义的目录名作为模块名
+                for part in parts:
+                    if part and not part.startswith('__') and part != 'lib' and not part.startswith('python'):
+                        module_name = part
+                        if module_name.endswith('.py'):
+                            module_name = module_name[:-3]
+                        return module_name, str(os.path.join(*parts))
+                # 如果找不到合适的模块名，返回None
+                return None
         return None
 
-    # 检查是否在工作目录里面的环境下
+    # 检查是否在relative to工作目录下的虚拟环境下。提前检查避免误认为是工作目录。
     for path in env.site_packages_paths_which_after_cwd:
         result = _parse_path_with_site_packages(filename, str(path))
         if result:
-            # print(f'[DEBUG] 解析到sp {result}')
             return result
 
     # 检查是否在工作目录下
     if filename.startswith(cwd):
         rel_path = os.path.relpath(filename, cwd)
-        # 工作区文件，返回当前目录标记和相对路径
-        # print(f'[DEBUG] 解析到工作目录 {filename} ({cwd=})')
         return '.', rel_path
 
-    # 检查是否在其他库路径下
+    # 检查是否在库路径下（包括标准库和site-packages）
     for path in env.site_packages_paths - env.site_packages_paths_which_after_cwd:
         result = _parse_path_with_site_packages(filename, str(path))
         if result:
-            # print(f'[DEBUG] 解析到sp {result}')
             return result
 
     # 默认情况，返回文件名
     base_name = os.path.basename(filename)
     if base_name.endswith('.py'):
         base_name = base_name[:-3]
-    # print(f'[DEBUG] 完全解析失败')
     return base_name, base_name
 
 

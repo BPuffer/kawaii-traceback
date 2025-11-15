@@ -322,26 +322,26 @@ class FrameSummary:
         :param locals_: 如果提供，会捕获帧的局部变量作为对象表示
         :param line: 如果提供，直接使用该行文本而不通过linecache查找
         """
-        self.filename = filename  # 原始文件名，可能是绝对路径(.py)或自定义模块提供的Traceback文件名
+        self.filename: str = filename  # 原始文件名，可能是绝对路径(.py)或自定义模块提供的Traceback文件名
         # 如 C:\Users\admin\Desktop\project\main.py
         # 如 numpy\random\mtrand.pyx
-        self.namespace = namespace  # 第三方包命名空间，工作区的为".", 如"numpy"
-        self.abs_filename = abs_filename  # 绝对执行文件名，C扩展会显示为.pyd或者.so
+        self.namespace: str = namespace  # 第三方包命名空间，工作区的为".", 如"numpy"
+        self.abs_filename: str = abs_filename  # 绝对执行文件名，C扩展会显示为.pyd或者.so
         # 如 C:\Users\admin\Desktop\project\main.py
         # 如 C:\Users\admin\Desktop\project\.venv\Lib\site-packages\numpy\random\mtrand.cp312-win_amd64.pyd
-        self.refined_filename = refined_filename  # 优化文件名，是工作区文件去掉cwd，库去掉lib(\sp)前缀的路径
+        self.refined_filename: str = refined_filename  # 优化文件名，是工作区文件去掉cwd，库去掉lib(\sp)前缀的路径
         # 如 main.py
         # 如 numpy\random\mtrand.cp312-win_amd64.pyd
-        self.lineno = lineno
-        self.name = name
-        self._line = line
+        self.lineno: int = lineno
+        self.name: str = name
+        self._line: Optional[str] = line
         if lookup_line:  # 立即获取源代码行
             self.load_line()
-        self.locals_ = {k: safe_string(v, 'local', func=repr)
+        self.locals_: Optional[dict] = {k: safe_string(v, 'local', func=repr)
                         for k, v in locals_.items()} if locals_ else None
-        self.end_lineno = end_lineno
-        self.colno = colno
-        self.end_colno = end_colno
+        self.end_lineno: Optional[int] = end_lineno
+        self.colno: Optional[int] = colno
+        self.end_colno: Optional[int] = end_colno
 
     def __eq__(self, other):
         if isinstance(other, FrameSummary):

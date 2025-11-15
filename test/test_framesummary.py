@@ -5,7 +5,7 @@ import pytest
 import kawaiitb.kraceback as kraceback
 from test.utils.utils import raise_error, KTBTestBase
 
-class TestFramesummary(KTBTestBase):
+class TestFramesummary(KTBTestBase, console_output=False):
     """测试Framesummary类"""
 
     def test_framesummary_at_cwd(self):
@@ -54,7 +54,11 @@ class TestFramesummary(KTBTestBase):
             yaml.load("a: :", Loader=yaml.FullLoader)
 
         ktb = kraceback.KTBException.from_exception(exc_info.value)
-        frame = ktb.stack[1]
+        frame = next(frame
+                     for frame in ktb.stack
+                     if 'site-packages' in frame.filename)
+        if frame is None:
+            pytest.skip("No third-party library frames found in stack")
 
         # print()
         # print(f"{frame.filename=}")

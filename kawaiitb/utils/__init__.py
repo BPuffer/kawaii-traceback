@@ -6,8 +6,6 @@ from io import TextIOWrapper, StringIO
 from pathlib import Path
 from typing import Any, Callable, TextIO, Union, overload
 
-from astroid import nodes
-
 import kawaiitb.utils.fromtraceback as fromtraceback
 
 sys_getframe = sys._getframe  # noqa
@@ -44,9 +42,9 @@ def extract_caret_anchors_from_line_segment(segment):
     normalize = lambda offset: fromtraceback.byte_offset_to_character_offset(segment, offset)
     statement = tree.body[0]
     match statement:
-        case nodes.Expr(expr):
+        case ast.Expr(expr):
             match expr:
-                case nodes.BinOp():
+                case ast.BinOp():
                     operator_start = normalize(expr.left.end_col_offset)
                     operator_end = normalize(expr.right.col_offset)
                     operator_str = segment[operator_start:operator_end]
@@ -61,7 +59,7 @@ def extract_caret_anchors_from_line_segment(segment):
                         left_anchor += 1
                         right_anchor += 1
                     return normalize(left_anchor), normalize(right_anchor)
-                case nodes.Subscript():
+                case ast.Subscript():
                     left_anchor = normalize(expr.value.end_col_offset)
                     right_anchor = normalize(expr.slice.end_col_offset + 1)
                     while left_anchor < len(segment) and ((ch := segment[left_anchor]).isspace() or ch != "["):

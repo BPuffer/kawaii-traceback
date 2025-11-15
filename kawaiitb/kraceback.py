@@ -632,6 +632,9 @@ class StackSummary(list[FrameSummary]):
     def iterate_3frames(self):
         """每次产生3个帧，包括上一个、当前和下一个。"""
         total = len(self)
+        if total == 1:
+            yield None, self[0], None
+            return
         for i, frame in enumerate(self):
             if i == 0:
                 yield None, frame, self[i + 1]

@@ -11,13 +11,11 @@ __license__ = "MIT"
 __copyright__ = "Copyright (c) 2025 BPuffer"
 __description__ = "A kawaii Python traceback beautifier with multilingual support"
 
-import sys
-
-import kawaiitb.kraceback as traceback
 import kawaiitb.handlers as handlers
+import kawaiitb.kraceback as traceback
 from kawaiitb.kraceback import KTBException
 from kawaiitb.kwihandler import ErrorSuggestHandler
-from kawaiitb.runtimeconfig import rc, load_config
+from kawaiitb.runtimeconfig import rc, load_config, set_config
 from kawaiitb.tools import load, unload
 
 __all__ = [
@@ -28,5 +26,6 @@ __all__ = [
     "ErrorSuggestHandler",
     "KTBException",
     "load_config",
+    "set_config",
     *handlers.__all__,
 ]

@@ -7,6 +7,9 @@ from kawaiitb.handlers.defaults.keyboardinterrupt import KeyboardInterruptHandle
 from kawaiitb.handlers.defaults.eoferror import EOFErrorHandler
 from kawaiitb.handlers.defaults.systemexit import SystemExitHandler
 from kawaiitb.handlers.defaults.attributeerror import AttributeErrorHandler
+from kawaiitb.handlers.defaults.importerror import ImportErrorHandler
+
+
 
 __all__ = [
     "StopIterationHandler",
@@ -18,6 +21,7 @@ __all__ = [
     "EOFErrorHandler",
     "SystemExitHandler",
     "AttributeErrorHandler",
+    "ImportErrorHandler"
 ]
 
 TODOS = {

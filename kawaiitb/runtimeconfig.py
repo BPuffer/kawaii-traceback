@@ -17,7 +17,7 @@ __all__ = [
 
 import warnings
 from collections import defaultdict, deque
-from typing import TextIO, Type, TYPE_CHECKING, Optional
+from typing import TextIO, Type, TYPE_CHECKING, Optional, Literal
 
 from kawaiitb._default_config import DEFAULT_CONFIG, EXTENDED
 from kawaiitb.utils import readables
@@ -83,8 +83,20 @@ def load_config(config: dict | TextIO = None):
         raise Exception("[KawaiiTB] A circular dependency exists in the language configuration!")
 
     # 重置默认语言
-    if "rc" in globals():
+    if "rc" in globals() and "default_lang" in _config:
         rc.change_language(_config["default_lang"])
+
+
+def set_config(config: dict, extend: str = "default"):
+    load_config({
+        "translate_keys": {
+            "__set_config__": {
+                "extend": extend,
+                **config,
+            },
+        },
+        "default_lang": "__set_config__",
+    })
 
 
 def set_language(lang: str):
@@ -159,6 +171,33 @@ class RuntimeConfig:
 
         warnings.warn(f"[KawaiiTB] Exceeded maximum extend depth for key: {key}")
         return f"<[KawaiiTB] Unreachable translate key: {key}>"
+
+    def get_config(self, key: str, config_type: type = str, _use_default=False, **kwargs):
+        if _use_default:
+            config = self._get_key("default", key)
+        else:
+            config = self.translate(key, **kwargs)
+        if config_type == int:
+            try:
+                return int(config)
+            except ValueError:
+                warnings.warn(f"[KawaiiTB] Invalid int config: {config}")
+                return self.get_config(key, config_type, _use_default=True, **kwargs)
+        elif config_type == bool:
+            if isinstance(config, bool):
+                return config
+            elif isinstance(config, str):
+                return config.lower() not in ["false", "0", ""]
+            else:
+                return bool(config)
+        elif config_type == float:
+            try:
+                return float(config)
+            except ValueError:
+                warnings.warn(f"[KawaiiTB] Invalid float config: {config}")
+                return self.get_config(key, config_type, _use_default=True, **kwargs)
+        else:
+            return config
 
     def anchors(self, indent: str, left_start: int, left_end: int, right_start: int, right_end: int, crlf: bool):
         primary = self.translate("config.anchor.primary")

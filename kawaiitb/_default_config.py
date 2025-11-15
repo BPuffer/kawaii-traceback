@@ -57,12 +57,18 @@ DEFAULT_CONFIG = {
 
             # 重复的帧
             "config.stack.recursive_cutoff": 3,
+            "config.stack.foldup": True,
+            "config.stack.foldup_topframe": False,
+            "config.stack.foldup_threshold": 1,
+            "config.stack.foldup_tailframe": False,
             "config.stack.line_repeat_more": '  [Previous line repeated {count} more times]\n',
+            "config.stack.module_repeat": '  | Frames from this module repeated {count} times\n',
 
             # 文件路径解析
-            "config.file.include_cwd": True,
+            "config.file.include_abspath": True,
             "config.file.parse_module_filename": False,
             "config.file.parsed_filename": "[{namespace}] {filename}",
+            "config.file.parsed_filename_withfoldup": "[{namespace}] (+{foldups}) {filename}",
             "config.module": "<module>",
             "config.string": "<string>",
 
@@ -95,16 +101,18 @@ DEFAULT_CONFIG = {
         },
         "en_us": {},  # 继承default
         "zh_hans": {  # 简体中文配置
-            "config.file.include_cwd": False,
+            "config.file.include_abspath": False,
             "config.module": "模块级语句",
-            "config.string": "注入的语句",
+            "config.string": "字符串注入语句",
+            "config.lambda": "匿名函数",
             "frame.location.with_column": '  文件 {file}:{lineno}:{colno} 的 {name}\n',
             "frame.location.without_column": '  文件 {file}:{lineno} 的 {name}\n',
             "frame.location.without_name": '  文件 "{file}:{lineno}"\n',
             "stack.cause": "\n该异常引发了另一个异常:\n\n",
             "stack.context": "\n处理上面的异常时，发生了如下异常:\n\n",
             "stack.summary": "异常回溯 (到最近一次调用):\n",
-            "config.stack.line_repeat_more": ' (*在那之后, 这一行重复了 {count} 次)\n',
+            "config.stack.line_repeat_more": '  * 这一帧重复了 {count} 次\n',
+            "config.stack.module_repeat": '  | *模块 {module} 的帧重复了 {count} 次\n',
         },
         "neko_zh": {  # 萌化中文配置示例
             "extend": "zh_hans",
@@ -114,6 +122,7 @@ DEFAULT_CONFIG = {
             "config.prompt1": "owo!> ",
             "config.prompt2": "=w=~| ",
             "config.anchor.suffix": " ↖在这里喵~",
+            "config.stack.module_repeat": '  | 压缩了 {count} 个来自模块 {module} 的帧\n',
 
             "exception.message": "[{etype}] {value}\n",
             "exception.exc_line_noval": "[{etype}]!\n",

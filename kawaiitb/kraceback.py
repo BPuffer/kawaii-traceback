@@ -19,8 +19,7 @@ from typing import Optional, Type, TYPE_CHECKING, Generator
 from kawaiitb.runtimeconfig import rc
 from kawaiitb.utils import (
     sys_getframe, extract_caret_anchors_from_line_segment,
-    safe_string, get_module_file_key, parse_module_filename,
-    get_translated_filename
+    safe_string, get_module_exec_file, parse_filename_sp_namespace
 )
 from kawaiitb.utils.fromtraceback import (
     sentinel, parse_value_tb, walk_tb_with_full_positions,
@@ -292,21 +291,28 @@ class FrameSummary:
     - :attr:`name` 捕获该帧时正在执行的函数或方法名称
     - :attr:`line` 来自linecache模块的该帧执行时的源代码文本
     - :attr:`locals_` 如果没有提供则为None，否则是变量名到其repr()表示的字典
+
+    - :attr:`namespace` 该帧对应的第三方包命名空间，工作区的为"."
+    - :attr:`abs_filename` 该帧对应的绝对执行文件名
+    - :attr:`refined_filename` 该帧对应的显示文件名，工作区文件去掉cwd，库去掉lib(\sp)前缀的路径
     """
 
-    __slots__ = ('filename', 'lineno', 'end_lineno', 'colno', 'end_colno',
+    __slots__ = ('filename', 'lineno', 'namespace', 'abs_filename', 'refined_filename', 'end_lineno', 'colno', 'end_colno',
                  'name', '_line', 'locals_')
 
     filename: str
     lineno: int
     name: str
+    namespace: str
+    abs_filename: str
+    refined_filename: str
     end_lineno: Optional[int]
     colno: Optional[int]
     end_colno: Optional[int]
     _line: Optional[str]
     locals_: Optional[dict]
 
-    def __init__(self, filename, lineno, name, *, lookup_line=True,
+    def __init__(self, filename, lineno, name, namespace, abs_filename, refined_filename, *, lookup_line=True,
                  locals_=None, line=None,
                  end_lineno=None, colno=None, end_colno=None):
         """构造FrameSummary对象。
@@ -316,7 +322,16 @@ class FrameSummary:
         :param locals_: 如果提供，会捕获帧的局部变量作为对象表示
         :param line: 如果提供，直接使用该行文本而不通过linecache查找
         """
-        self.filename = filename
+        self.filename = filename  # 原始文件名，可能是绝对路径(.py)或自定义模块提供的Traceback文件名
+        # 如 C:\Users\admin\Desktop\project\main.py
+        # 如 numpy\random\mtrand.pyx
+        self.namespace = namespace  # 第三方包命名空间，工作区的为".", 如"numpy"
+        self.abs_filename = abs_filename  # 绝对执行文件名，C扩展会显示为.pyd或者.so
+        # 如 C:\Users\admin\Desktop\project\main.py
+        # 如 C:\Users\admin\Desktop\project\.venv\Lib\site-packages\numpy\random\mtrand.cp312-win_amd64.pyd
+        self.refined_filename = refined_filename  # 优化文件名，是工作区文件去掉cwd，库去掉lib(\sp)前缀的路径
+        # 如 main.py
+        # 如 numpy\random\mtrand.cp312-win_amd64.pyd
         self.lineno = lineno
         self.name = name
         self._line = line
@@ -431,17 +446,20 @@ class StackSummary(list[FrameSummary]):
 
         # 遍历frame_gen，构建FrameSummary对象
         for f, (lineno, end_lineno, colno, end_colno) in frame_gen:
-            co = f.f_code  # 获取代码对象
+            # 在这里需要完全提取frame对象的有效信息到FrameSummary，以安全解引用traceback本身
 
-            filename = co.co_filename  # 获取文件名
-            if not filename.startswith("<") and not os.path.isabs(filename):
-                filename = get_module_file_key(f, filename)
+            co = f.f_code  # 获取代码对象。代码对象是静态的，安。
 
-            fnames.add(filename)  # 添加文件名到集合中
+            orig_filename = co.co_filename  # 获取文件名
+            if not orig_filename.startswith("<") and not os.path.isabs(orig_filename):
+                abs_filename = get_module_exec_file(f)  # 谨防 Cython 偷家
+            else:
+                abs_filename = orig_filename
+            namespace, display_filename = parse_filename_sp_namespace(abs_filename, ENV)
 
             name = co.co_name  # 获取函数名
 
-            linecache.lazycache(filename, f.f_globals)  # 延迟加载文件内容到linecache
+            linecache.lazycache(orig_filename, f.f_globals)  # 延迟加载文件内容到linecache
 
             # 是否捕获局部变量
             if capture_locals:
@@ -451,12 +469,14 @@ class StackSummary(list[FrameSummary]):
 
             # 创建FrameSummary对象并添加到结果中
             result.append(FrameSummary(
-                filename, lineno, name, lookup_line=False, locals_=f_locals,
+                orig_filename, lineno, name, namespace, abs_filename, display_filename, lookup_line=False, locals_=f_locals,
                 end_lineno=end_lineno, colno=colno, end_colno=end_colno))
 
+            fnames.add(orig_filename)  # 添加文件名到集合中，后续检查并加载
+
         # 检查并更新linecache中的文件内容
-        for filename in fnames:
-            linecache.checkcache(filename)
+        for orig_filename in fnames:
+            linecache.checkcache(orig_filename)
 
         # 如果需要立即查找，现在触发查找
         if lookup_lines:
@@ -482,33 +502,49 @@ class StackSummary(list[FrameSummary]):
                 result.append(FrameSummary(filename, lineno, name, line=line))
         return result
 
-    def format_frame_summary(self, frame_summary: FrameSummary):
+    def format_frame_summary(self, frame_summary: FrameSummary, frame_folded: int = 0) -> str:
         """格式化单个FrameSummary的行。
 
         返回表示堆栈中单个帧的字符串。对于要打印在堆栈摘要中的每个帧，
         都会调用此方法。
         """
-        # 文件名，据此判断是否为工作区，并判断是否包含工作区路径
-        namespace, display_filename = parse_module_filename(frame_summary.filename, ENV)
-
-        # 函数名，判断是否为模块级语句并翻译
+        # 函数名 (Code name)，判断是否为模块级语句并翻译
         name = frame_summary.name
         if name == "<module>":
             name = rc.translate("config.module")
         elif name == "<string>":
             name = rc.translate("config.string")
+        elif name == "<lambda>":
+            name = rc.translate("config.lambda")
 
         # 格式化帧信息行
-        display_filename_translated = get_translated_filename(namespace, frame_summary.filename, display_filename, rc)
+        if rc.translate('config.file.include_abspath'):
+            filename = frame_summary.abs_filename  # 包含完整路径时总是使用绝对路径，这个选项的场景是用户要求必须通过路径找到真的文件
+        elif frame_summary.refined_filename.endswith(".py"):
+            filename = frame_summary.refined_filename  # 不包含完整路径时，对于普通Python文件，使用从找到的路径简化的文件名
+        else:
+            filename = frame_summary.filename  # 非普通的Python文件，直接使用CodeType的原始文件名，如Cython是编译器填的编译路径
+        if frame_summary.namespace == '.':
+            final_display_filename = filename  # 当前目录直接展示工作区文件，不包含工作区位置信息
+        elif frame_folded:  # 非当前目录，展示第三方包信息
+            final_display_filename = rc.translate("config.file.parsed_filename_withfoldup",
+                                                  namespace=frame_summary.namespace,
+                                                  foldups=frame_folded,
+                                                  filename=filename)
+        else:
+            final_display_filename = rc.translate("config.file.parsed_filename",
+                                                  namespace=frame_summary.namespace,
+                                                  filename=filename)
+
         if frame_summary.colno is not None:
             row = [rc.translate('frame.location.with_column',
-                                file=display_filename_translated,
+                                file=final_display_filename,
                                 name=name,
                                 lineno=frame_summary.lineno,
                                 colno=frame_summary.colno)]
         else:
             row = [rc.translate('frame.location.without_column',
-                                file=display_filename_translated,
+                                file=final_display_filename,
                                 lineno=frame_summary.lineno,
                                 name=frame_summary.name)]
 
@@ -593,51 +629,110 @@ class StackSummary(list[FrameSummary]):
 
         return ''.join(row)
 
+    def iterate_3frames(self):
+        """每次产生3个帧，包括上一个、当前和下一个。"""
+        total = len(self)
+        for i, frame in enumerate(self):
+            if i == 0:
+                yield None, frame, self[i + 1]
+            elif i == len(self) - 1:
+                yield self[i - 1], frame, None
+            else:
+                yield self[i - 1], frame, self[i + 1]
+
     def format(self):
         """格式化堆栈信息以便打印。
 
         返回一个准备打印的字符串列表。结果列表中的每个字符串对应堆栈中的一个帧。
         每个字符串以换行符结尾；对于包含源代码文本行的项，字符串中可能也包含内部换行符。
 
-        对于长时间重复的相同帧和行，会显示前几次重复，然后是一个总结行，说明确切的后续重复次数。
+        对于多次重复的相同帧和行或连续的同一个库的相同帧和行会被折叠。
         """
-        result = []
-        last_file = None
-        last_line = None
-        last_name = None
-        recursive_cutoff = rc.translate("config.stack.recursive_cutoff")
-        if isinstance(recursive_cutoff, str) and recursive_cutoff.isdigit():
-            recursive_cutoff = int(recursive_cutoff)
-        if not isinstance(recursive_cutoff, int):
-            import warnings
-            warnings.warn(f"config.stack.recursive_cutoff must be an integer, but found ({type(recursive_cutoff)}){recursive_cutoff}, use default value {recursive_cutoff}")
-            recursive_cutoff = 3
-
-        count = 0
-        for frame_summary in self:
-            formatted_frame = self.format_frame_summary(frame_summary)
-            if formatted_frame is None:
-                continue
-
-            # 重复组标记
-            if (last_file is None or last_file != frame_summary.filename or
-                    last_line is None or last_line != frame_summary.lineno or
-                    last_name is None or last_name != frame_summary.name):  # 如果这是新的帧
-                if count > recursive_cutoff:  # 且上一个帧重复了几次
-                    count -= recursive_cutoff
-                    result.append(rc.translate('config.stack.line_repeat_more', count=count))
+        # 帧完全重复检查
+        def frame_repeat_checker():
+            last_file = None
+            last_line = None
+            last_name = None
+            def is_repeat(frame_summary: FrameSummary):
+                nonlocal last_file, last_line, last_name
+                ret = not (last_file is None or last_file != frame_summary.filename or
+                            last_line is None or last_line != frame_summary.lineno or
+                            last_name is None or last_name != frame_summary.name)
                 last_file = frame_summary.filename
                 last_line = frame_summary.lineno
                 last_name = frame_summary.name
-                count = 0
-            count += 1
-            if count > recursive_cutoff:
-                continue
-            result.append(formatted_frame)
+                return ret
+            return is_repeat
+        repeat_checker = frame_repeat_checker()
+        recursive_cutoff: int = rc.get_config("config.stack.recursive_cutoff", int)
+        repeat_count = 0
 
-        if count > recursive_cutoff:
-            count -= recursive_cutoff
-            result.append(rc.translate('config.stack.line_repeat_more', count=count))
+        # 帧模块重复检查
+        def frame_module_checker():
+            last_module = None
+
+            def is_module_repeat(frame_summary: FrameSummary):
+                nonlocal last_module
+                is_repeat = (last_module is not None and
+                       last_module == frame_summary.namespace and
+                       last_module != ".")
+                last_module = frame_summary.namespace
+                return is_repeat
+
+            return is_module_repeat
+        module_checker = frame_module_checker()
+        foldup_threshold: int = rc.get_config("config.stack.foldup_threshold", int)
+        foldup_topframe: bool = rc.get_config("config.stack.foldup_topframe", bool)
+        foldup_tailframe: bool = rc.get_config("config.stack.foldup_tailframe", bool)
+        foldup: bool = rc.get_config("config.stack.foldup", bool)
+        module_repeat_count = 0
+        last_module = None
+
+        result = []
+        for last_frame_summary, frame_summary, next_frame_summary in self.iterate_3frames():
+            formatted_frame = None
+            # 重复组标记
+            if not repeat_checker(frame_summary):  # 如果这是新的帧
+                if repeat_count > recursive_cutoff:  # 且上一个帧重复了几次
+                    # 在新的一帧前添加重复组标记
+                    result.append(rc.translate('config.stack.line_repeat', count=repeat_count))
+                repeat_count = 0
+            repeat_count += 1
+            if repeat_count > recursive_cutoff:
+                continue
+
+            # 重复模块帧序列标记
+            if foldup:
+                if not module_checker(frame_summary):  # 如果这是新的模块
+                    if last_frame_summary and module_repeat_count > foldup_threshold:  # 且上一个模块重复了几次
+                        # 在新的一模块前添加重复模块帧序列标记
+                        frame_folded = module_repeat_count - 2 + foldup_topframe + foldup_tailframe
+                        result.append(rc.translate('config.stack.module_repeat',
+                                                   module=last_frame_summary.namespace,
+                                                   count=frame_folded))
+                        if not foldup_tailframe:
+                            formatted_frame = self.format_frame_summary(last_frame_summary, frame_folded)
+                        if formatted_frame is not None:
+                            result.append(formatted_frame)
+                    module_repeat_count = 0
+                module_repeat_count += 1
+                if module_repeat_count > foldup_threshold:
+                    continue
+                if not (
+                        foldup_topframe and last_frame_summary and next_frame_summary and
+                        last_frame_summary.namespace != frame_summary.namespace and
+                        frame_summary.namespace == next_frame_summary.namespace
+                ):
+                    formatted_frame = self.format_frame_summary(frame_summary)
+            else:
+                formatted_frame = self.format_frame_summary(frame_summary)
+
+            if formatted_frame is not None:
+                result.append(formatted_frame)
+
+        if repeat_count > recursive_cutoff:
+            repeat_count -= recursive_cutoff
+            result.append(rc.translate('config.stack.line_repeat_more', count=repeat_count))
         return result
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import kawaiitb
-from kawaiitb.utils import parse_module_filename
+from kawaiitb.utils import parse_filename_sp_namespace
 
 @pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
 def test_parse_module_filename_win():
@@ -39,7 +39,7 @@ def test_parse_module_filename_win():
     env = ENV()
 
     for file_path, expected_module, expected_relative_path in test_cases:
-        module, relative_path = parse_module_filename(file_path, env=env)
+        module, relative_path = parse_filename_sp_namespace(file_path, env=env)
         module = module.replace('\\', '/')
         relative_path = relative_path.replace('\\', '/')
         assert module == expected_module, f"Failed for {file_path}: expected module '{expected_module}', got '{module}'"
@@ -91,7 +91,7 @@ def test_parse_module_filename_linux():
     env = ENV()
 
     for file_path, expected_module, expected_relative_path in test_cases:
-        module, relative_path = parse_module_filename(file_path, env=env)
+        module, relative_path = parse_filename_sp_namespace(file_path, env=env)
         # 统一使用正斜杠，避免Windows路径问题
         module = module.replace('\\', '/')
         relative_path = relative_path.replace('\\', '/')

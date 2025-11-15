@@ -123,8 +123,8 @@ def _combine_subpath(file_exec_path, frame_co_filename) -> str:
     result_parts = a_parts[:last_match_idx] + list(b_parts)
     return str(Path(*result_parts))
 
-def get_module_file_key(frame, frame_co_filename=None) -> str:
-    """获取模块的完整路径，破解Cython等奇行种"""
+def get_module_file_combined_key(frame, frame_co_filename=None) -> str:
+    """获取模块的完整路径"""
     @lru_cache
     def unsafe_get_module_file_key(frame, frame_co_filename=None):
         file_exec_path = frame.f_globals.get('__file__', None)
@@ -140,8 +140,11 @@ def get_module_file_key(frame, frame_co_filename=None) -> str:
     # print(f'[DEBUG] get_module_file_key: turn {frame.f_code.co_filename} -> {filename}')
     return filename
 
+def get_module_exec_file(frame) -> str | None:
+    """获取模块的执行文件路径"""
+    return frame.f_globals.get('__file__', None)
 
-def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
+def parse_filename_sp_namespace(filename: str, env = None) -> tuple[str, str]:
     """处理模块文件名，返回格式化后的命名空间和显示字符串"""
 
     if not env:
@@ -197,19 +200,6 @@ def parse_module_filename(filename: str, env = None) -> tuple[str, str]:
         base_name = base_name[:-3]
     return base_name, base_name
 
-
-def get_translated_filename(namespace, completly_raw_filename, display_filename, rc) -> str:
-    """获取翻译后的文件名"""
-    filename = completly_raw_filename if rc.translate('config.file.include_cwd') else display_filename
-    if namespace == '.':  # 当前目录，工作区文件
-        return filename
-    # 可能是包，返回格式化后的文件名
-    return rc.translate("config.file.parsed_filename", namespace=namespace, filename=filename)
-
-def parse_get_translated_filename(filename: str, env, rc) -> str:
-    """解析模块文件名并获取翻译后的文件名"""
-    ns, df = parse_module_filename(filename, env)
-    return get_translated_filename(ns, filename, df, rc)
-
 def get_this_module_frame():
+    # TODO: 删掉
     return sys_getframe(0)

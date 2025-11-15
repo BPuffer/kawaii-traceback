@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Generator, TYPE_CHECKING
 import inspect
 
 import astroid
@@ -7,8 +7,10 @@ from astroid import nodes
 from kawaiitb.kraceback import KTBException, ENV
 from kawaiitb.kwihandler import ErrorSuggestHandler
 from kawaiitb.runtimeconfig import rc
-from kawaiitb.utils import safe_string, is_sysstdlib_name, parse_get_translated_filename
+from kawaiitb.utils import safe_string, is_sysstdlib_name
 from kawaiitb.utils.suggestions import find_weighted_closest_matches, VarsGroup, merge_sorted_suggestions
+if TYPE_CHECKING:
+    from kawaiitb.kraceback import FrameSummary
 
 
 @KTBException.register
@@ -99,12 +101,12 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
             return None
         error_ocuring_file = getattr(self.obj, '__file__')
         start_recording = False
-        interdependent_nodes = []
+        interdependent_nodes: list["FrameSummary"] = []
         for frame in ktb_exc.stack:
-            if frame.filename == error_ocuring_file:
+            if frame.abs_filename == error_ocuring_file:
                 start_recording = True
             if start_recording:
-                interdependent_nodes.append(frame.filename)
+                interdependent_nodes.append(frame)
         if len(interdependent_nodes) == 0:
             return None  # 不成环
         return interdependent_nodes  # 成环
@@ -179,9 +181,9 @@ class AttributeErrorHandler(ErrorSuggestHandler, priority=1.0):
                 path_top = rc.translate("native.AttributeError.interdependents_loop_table_top")
                 path_mid = rc.translate("native.AttributeError.interdependents_loop_table_mid")
                 path_low = rc.translate("native.AttributeError.interdependents_loop_table_low")
-                for i, filename in enumerate(loop):
+                for i, frame in enumerate(loop):
                     path_table = path_top if i == 0 else path_mid if i < len(loop) - 1 else path_low
-                    path += f"{path_table}{parse_get_translated_filename(filename, ENV, rc)}\n"
+                    path += f"{path_table}{frame.filename}\n"
                 yield rc.translate("native.AttributeError.interdependents_with_loop", obj=self.obj_module_name, attr=attr_rawname, path=path)
                 return
             else:

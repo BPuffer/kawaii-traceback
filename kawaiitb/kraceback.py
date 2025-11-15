@@ -284,7 +284,7 @@ def clear_frames(tb):
 
 @dataclass
 class FrameSummary:
-    """表示回溯中单个帧的信息。
+    r"""表示回溯中单个帧的信息。
 
     - :attr:`filename` 该帧对应的文件名
     - :attr:`lineno` 捕获该帧时在文件中活跃的代码行号

@@ -5,7 +5,7 @@ import pytest
 import kawaiitb
 from kawaiitb.utils import parse_filename_sp_namespace
 
-# @pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
+@pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
 def test_parse_module_filename_win():
     """Test parse_module_filename with various file paths."""
     test_cases = [

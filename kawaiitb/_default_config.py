@@ -58,7 +58,7 @@ DEFAULT_CONFIG = {
             # 重复的帧
             "config.stack.recursive_cutoff": 3,
             "config.stack.foldup": True,
-            "config.stack.foldup_topframe": False,
+            "config.stack.foldup_topframe": True,
             "config.stack.foldup_threshold": 1,
             "config.stack.foldup_tailframe": False,
             "config.stack.line_repeat_more": '  [Previous line repeated {count} more times]\n',

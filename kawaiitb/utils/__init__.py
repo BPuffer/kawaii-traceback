@@ -179,7 +179,7 @@ def parse_filename_sp_namespace(filename: str, env = None) -> tuple[str, str]:
 
     # 检查是否在relative to工作目录下的虚拟环境下。提前检查避免误认为是工作目录。
     for path in env.site_packages_paths_which_after_cwd:
-        result = _parse_path_with_site_packages(filename, str(path))
+        result = _parse_path_with_site_packages(filename, os.path.normpath(path))
         if result:
             return result
 
@@ -190,7 +190,7 @@ def parse_filename_sp_namespace(filename: str, env = None) -> tuple[str, str]:
 
     # 检查是否在库路径下（包括标准库和site-packages）
     for path in env.site_packages_paths - env.site_packages_paths_which_after_cwd:
-        result = _parse_path_with_site_packages(filename, str(path))
+        result = _parse_path_with_site_packages(filename, os.path.normpath(path))
         if result:
             return result
 

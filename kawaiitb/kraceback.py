@@ -1,6 +1,6 @@
 """
 本文件重写了traceback中的部分结构，使其支持自定义的异常处理器。
-结构与traceback.py相比有减改而无增。
+接口与traceback.py相比大体类似，但`TracebackException`改为`KTBException`。
 
 "Extract, format and print information about Python stack traces."
 """
@@ -13,8 +13,8 @@ import site
 import sys
 from contextlib import suppress
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Type, TYPE_CHECKING, Generator
+from pathlib import Path, PurePath
+from typing import Optional, Type, TYPE_CHECKING, Generator, LiteralString
 
 from kawaiitb.runtimeconfig import rc
 from kawaiitb.utils import (
@@ -32,12 +32,12 @@ if TYPE_CHECKING:
 
 
 class _ENV:
-    def __init__(self):
-        self.update()
+    def __init__(self, cwd: PurePath =None, platform: str =None, stdlib_paths: set[PurePath]=None, site_packages: set[PurePath]=None):
+        self.update(cwd, platform, stdlib_paths, site_packages)
 
     def get_stdlib_paths(self):
         """获取所有可能的标准库路径"""
-        paths = set()
+        paths: set[Path] = set()
 
         # 基础标准库路径
         if hasattr(sys, 'base_prefix'):
@@ -49,7 +49,7 @@ class _ENV:
             ]
             for path in base_paths:
                 if path.exists():
-                    paths.add(path.resolve())
+                    paths.add(path)
 
         # 当前环境的库路径
         if hasattr(sys, 'prefix'):
@@ -61,34 +61,31 @@ class _ENV:
             ]
             for path in prefix_paths:
                 if path.exists():
-                    paths.add(path.resolve())
+                    paths.add(path)
 
         return paths
 
-    def update(self):
+    def update(self, cwd: Path =None, platform: str =None, stdlib_paths: set[Path]=None, site_packages: set[Path]=None):
         """更新环境信息"""
-        self.cwd = os.getcwd()
-        self.platform = sys.platform
+        self.cwd = cwd or Path(os.getcwd())
+        self.platform = platform or sys.platform
 
         # 获取标准库路径
-        self.stdlib_paths = self.get_stdlib_paths()
+        self.stdlib_paths = stdlib_paths or self.get_stdlib_paths()
 
         # 获取site-packages路径
-        self.site_packages = site.getsitepackages()
-        self.site_packages_paths = set(
-            [Path(p).resolve() for p in self.site_packages] +
-            list(self.stdlib_paths)  # 包含标准库路径
-        )
+        self.site_packages = site_packages or set(Path(p).resolve() for p in site.getsitepackages())
+        self.all_import_paths = self.stdlib_paths | self.site_packages
 
         # 找出在工作目录之后的路径
-        self.site_packages_paths_which_after_cwd = set(
-            [p for p in self.site_packages_paths if str(self.cwd) in str(p)]
+        self.all_import_paths_acwd = set(
+            [p for p in self.all_import_paths if self.cwd in p.parents]
         )
 
     def get_invalid_site_packages_paths(self):
         """获取无效的site-packages路径。仅小写，使用时需转换为小写比较"""
         return {'site-packages', 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}',
-                f'python3'}
+                f'python3', '..'}
 
 ENV = _ENV()
 

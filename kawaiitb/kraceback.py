@@ -709,10 +709,11 @@ class StackSummary(list[FrameSummary]):
                 if not module_checker(frame_summary):  # 如果这是新的模块
                     if last_frame_summary and module_repeat_count > foldup_threshold:  # 且上一个模块重复了几次
                         # 在新的一模块前添加重复模块帧序列标记
-                        frame_folded = module_repeat_count - 2 + foldup_topframe + foldup_tailframe
-                        result.append(rc.translate('config.stack.module_repeat',
-                                                   module=last_frame_summary.namespace,
-                                                   count=frame_folded))
+                        frame_folded = module_repeat_count + foldup_topframe + foldup_tailframe - 2
+                        if frame_folded > 0:
+                            result.append(rc.translate('config.stack.module_repeat',
+                                                       module=last_frame_summary.namespace,
+                                                       count=frame_folded))
                         if not foldup_tailframe:
                             formatted_frame = self.format_frame_summary(last_frame_summary, frame_folded)
                         if formatted_frame is not None:
